@@ -1,0 +1,15 @@
+- Stock se descuenta al confirmar pedido.
+- No se permite stock negativo.
+- Si el producto no está en la lista del cliente, se usa precio base.
+- ListaDePrecios es reutilizable.
+- Stock es aggregate separado de Producto.
+- Cliente-comercio no es usuario del sistema en baseline.
+- No hay offline en esta etapa.
+- No hay facturación.
+- No hay cuenta corriente.
+- No hay WhatsApp automático.
+- No hay ERP.
+- No hay logística.
+- Cada producto tiene una única unidad de venta; las cantidades son decimales y no hay conversiones entre unidades en v1.
+- Address guarda Street, CityId y ZipCode opcional; Province se deriva de City.
+- Stock persiste solo el saldo actual; no hay movimientos de stock en v1.

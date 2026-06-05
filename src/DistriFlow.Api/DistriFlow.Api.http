@@ -1,0 +1,51 @@
+@DistriFlow.Api_HostAddress = http://localhost:5106
+
+POST {{DistriFlow.Api_HostAddress}}/api/distributors
+Content-Type: application/json
+
+{
+  "distributor": {
+    "name": "Distribuidora Centro",
+    "email": "contacto@distribuidoracentro.com",
+    "phone": "3515550100",
+    "address": {
+      "street": "Av. Colón 1234",
+      "cityId": 1,
+      "zipCode": "5000"
+    }
+  },
+  "administrator": {
+    "name": "Administrador Principal",
+    "email": "admin@distribuidoracentro.com",
+    "password": "Admin123!"
+  }
+}
+
+###
+
+POST {{DistriFlow.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "distributorId": "00000000-0000-0000-0000-000000000001",
+  "email": "admin@distribuidoracentro.com",
+  "password": "Admin123!"
+}
+
+###
+
+@AccessToken = replace-with-login-token
+
+GET {{DistriFlow.Api_HostAddress}}/api/distributors/current
+Accept: application/json
+Authorization: Bearer {{AccessToken}}
+
+###
+
+PATCH {{DistriFlow.Api_HostAddress}}/api/distributors/current/suspend
+Authorization: Bearer {{AccessToken}}
+
+###
+
+PATCH {{DistriFlow.Api_HostAddress}}/api/distributors/current/reactivate
+Authorization: Bearer {{AccessToken}}

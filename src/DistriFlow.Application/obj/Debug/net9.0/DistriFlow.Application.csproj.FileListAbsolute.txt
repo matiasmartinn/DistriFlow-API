@@ -1,0 +1,15 @@
+C:\Users\User\Desktop\proyectos\DistriFlow\DistriFlow-API\src\DistriFlow.Application\bin\Debug\net9.0\DistriFlow.Application.deps.json
+C:\Users\User\Desktop\proyectos\DistriFlow\DistriFlow-API\src\DistriFlow.Application\bin\Debug\net9.0\DistriFlow.Application.dll
+C:\Users\User\Desktop\proyectos\DistriFlow\DistriFlow-API\src\DistriFlow.Application\bin\Debug\net9.0\DistriFlow.Application.pdb
+C:\Users\User\Desktop\proyectos\DistriFlow\DistriFlow-API\src\DistriFlow.Application\bin\Debug\net9.0\DistriFlow.Domain.dll
+C:\Users\User\Desktop\proyectos\DistriFlow\DistriFlow-API\src\DistriFlow.Application\bin\Debug\net9.0\DistriFlow.Domain.pdb
+C:\Users\User\Desktop\proyectos\DistriFlow\DistriFlow-API\src\DistriFlow.Application\obj\Debug\net9.0\DistriFlow.Application.csproj.AssemblyReference.cache
+C:\Users\User\Desktop\proyectos\DistriFlow\DistriFlow-API\src\DistriFlow.Application\obj\Debug\net9.0\DistriFlow.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\User\Desktop\proyectos\DistriFlow\DistriFlow-API\src\DistriFlow.Application\obj\Debug\net9.0\DistriFlow.Application.AssemblyInfoInputs.cache
+C:\Users\User\Desktop\proyectos\DistriFlow\DistriFlow-API\src\DistriFlow.Application\obj\Debug\net9.0\DistriFlow.Application.AssemblyInfo.cs
+C:\Users\User\Desktop\proyectos\DistriFlow\DistriFlow-API\src\DistriFlow.Application\obj\Debug\net9.0\DistriFlow.Application.csproj.CoreCompileInputs.cache
+C:\Users\User\Desktop\proyectos\DistriFlow\DistriFlow-API\src\DistriFlow.Application\obj\Debug\net9.0\DistriFl.41997C78.Up2Date
+C:\Users\User\Desktop\proyectos\DistriFlow\DistriFlow-API\src\DistriFlow.Application\obj\Debug\net9.0\DistriFlow.Application.dll
+C:\Users\User\Desktop\proyectos\DistriFlow\DistriFlow-API\src\DistriFlow.Application\obj\Debug\net9.0\refint\DistriFlow.Application.dll
+C:\Users\User\Desktop\proyectos\DistriFlow\DistriFlow-API\src\DistriFlow.Application\obj\Debug\net9.0\DistriFlow.Application.pdb
+C:\Users\User\Desktop\proyectos\DistriFlow\DistriFlow-API\src\DistriFlow.Application\obj\Debug\net9.0\ref\DistriFlow.Application.dll

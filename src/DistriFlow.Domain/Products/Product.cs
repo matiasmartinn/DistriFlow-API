@@ -1,0 +1,72 @@
+using DistriFlow.Domain.Common.Errors;
+using DistriFlow.Domain.Common.ValueObjects;
+using DistriFlow.Domain.Distributors;
+
+namespace DistriFlow.Domain.Products;
+
+public sealed class Product
+{
+    public ProductId Id { get; private set; }
+    public DistributorId DistributorId { get; private set; }
+    public string Name { get; private set; } = null!;
+    public Sku? Sku { get; private set; }
+    public SaleUnit SaleUnit { get; private set; } = null!;
+    public Money BasePrice { get; private set; }
+    public ProductStatus Status { get; private set; }
+
+    private Product() { }
+
+    private Product(
+        ProductId id,
+        DistributorId distributorId,
+        string name,
+        Sku? sku,
+        SaleUnit saleUnit,
+        Money basePrice)
+    {
+        Id = id;
+        DistributorId = distributorId;
+        Name = name;
+        Sku = sku;
+        SaleUnit = saleUnit;
+        BasePrice = basePrice;
+        Status = ProductStatus.Active;
+    }
+
+    public static Product Create(
+        DistributorId distributorId,
+        string name,
+        Sku? sku,
+        SaleUnit saleUnit,
+        Money basePrice)
+    {
+        if (distributorId.Value == Guid.Empty)
+            throw new DomainException("La distribuidora del producto es requerida.");
+
+        if (string.IsNullOrWhiteSpace(name))
+            throw new DomainException("El nombre del producto es requerido.");
+
+        return new Product(
+            ProductId.New(),
+            distributorId,
+            name.Trim(),
+            sku,
+            saleUnit,
+            basePrice);
+    }
+
+    public void ChangeBasePrice(Money basePrice)
+    {
+        BasePrice = basePrice;
+    }
+
+    public void Discontinue()
+    {
+        Status = ProductStatus.Discontinued;
+    }
+
+    public void Reactivate()
+    {
+        Status = ProductStatus.Active;
+    }
+}
