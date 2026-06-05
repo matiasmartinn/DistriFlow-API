@@ -1,4 +1,5 @@
 using DistriFlow.Application.Auth;
+using DistriFlow.Application.Customers;
 using DistriFlow.Application.Distributors;
 using DistriFlow.Application.PriceLists;
 using DistriFlow.Application.Products;
@@ -11,6 +12,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
+        services.AddScoped<ICustomerService, CustomerService>();
         services.AddScoped<IDistributorService, DistributorService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IPriceListService, PriceListService>();

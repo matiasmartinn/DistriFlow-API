@@ -22,6 +22,44 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("DistriFlow.Domain.Customers.Customer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("DistributorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("distributor_id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid?>("PriceListId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("price_list_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_customers");
+
+                    b.HasIndex("DistributorId")
+                        .HasDatabaseName("ix_customers_distributor_id");
+
+                    b.HasIndex("DistributorId", "PriceListId")
+                        .HasDatabaseName("ix_customers_distributor_id_price_list_id");
+
+                    b.ToTable("customers", (string)null);
+                });
+
             modelBuilder.Entity("DistriFlow.Domain.Distributors.Distributor", b =>
                 {
                     b.Property<Guid>("Id")
@@ -177,6 +215,71 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_users_distributor_id_email");
 
                     b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("DistriFlow.Domain.Customers.Customer", b =>
+                {
+                    b.OwnsOne("DistriFlow.Domain.Common.ValueObjects.Address", "Address", b1 =>
+                        {
+                            b1.Property<Guid>("CustomerId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<int>("CityId")
+                                .HasColumnType("integer")
+                                .HasColumnName("city_id");
+
+                            b1.Property<string>("Street")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("street");
+
+                            b1.Property<string>("ZipCode")
+                                .HasMaxLength(20)
+                                .HasColumnType("character varying(20)")
+                                .HasColumnName("zip_code");
+
+                            b1.HasKey("CustomerId");
+
+                            b1.ToTable("customers");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CustomerId")
+                                .HasConstraintName("fk_customers_customers_id");
+                        });
+
+                    b.OwnsOne("DistriFlow.Domain.Common.ValueObjects.ContactInfo", "Contact", b1 =>
+                        {
+                            b1.Property<Guid>("CustomerId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Email")
+                                .IsRequired()
+                                .HasMaxLength(320)
+                                .HasColumnType("character varying(320)")
+                                .HasColumnName("contact_email");
+
+                            b1.Property<string>("Phone")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("contact_phone");
+
+                            b1.HasKey("CustomerId");
+
+                            b1.ToTable("customers");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CustomerId")
+                                .HasConstraintName("fk_customers_customers_id");
+                        });
+
+                    b.Navigation("Address");
+
+                    b.Navigation("Contact")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DistriFlow.Domain.Distributors.Distributor", b =>
