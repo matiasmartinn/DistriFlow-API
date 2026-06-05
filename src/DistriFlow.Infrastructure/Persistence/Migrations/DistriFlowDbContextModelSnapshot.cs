@@ -50,6 +50,31 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
                     b.ToTable("distributors", (string)null);
                 });
 
+            modelBuilder.Entity("DistriFlow.Domain.PriceLists.PriceList", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("DistributorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("distributor_id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_price_lists");
+
+                    b.HasIndex("DistributorId")
+                        .HasDatabaseName("ix_price_lists_distributor_id");
+
+                    b.ToTable("price_lists", (string)null);
+                });
+
             modelBuilder.Entity("DistriFlow.Domain.Products.Product", b =>
                 {
                     b.Property<Guid>("Id")
@@ -221,6 +246,36 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
 
                     b.Navigation("Contact")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("DistriFlow.Domain.PriceLists.PriceList", b =>
+                {
+                    b.OwnsMany("DistriFlow.Domain.PriceLists.ProductPrice", "ProductPrices", b1 =>
+                        {
+                            b1.Property<Guid>("PriceListId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("price_list_id");
+
+                            b1.Property<Guid>("ProductId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("product_id");
+
+                            b1.Property<decimal>("Price")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("numeric(18,2)")
+                                .HasColumnName("price");
+
+                            b1.HasKey("PriceListId", "ProductId")
+                                .HasName("pk_price_list_product_prices");
+
+                            b1.ToTable("price_list_product_prices", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("PriceListId")
+                                .HasConstraintName("fk_price_list_product_prices_price_lists_price_list_id");
+                        });
+
+                    b.Navigation("ProductPrices");
                 });
 #pragma warning restore 612, 618
         }

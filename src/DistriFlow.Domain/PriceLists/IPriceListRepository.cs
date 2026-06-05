@@ -9,6 +9,10 @@ public interface IPriceListRepository
         PriceListId id,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<PriceList>> GetAllAsync(
+        DistributorId distributorId,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(
         PriceList priceList,
         CancellationToken cancellationToken = default);
