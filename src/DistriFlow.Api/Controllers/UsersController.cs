@@ -1,0 +1,46 @@
+using DistriFlow.Application.Users;
+using DistriFlow.Application.Users.DTOs.Requests;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace DistriFlow.Api.Controllers;
+
+[Authorize(Roles = "Administrator")]
+public sealed class UsersController : BaseController
+{
+    private readonly IUserService _service;
+
+    public UsersController(IUserService service)
+    {
+        _service = service;
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create(
+        [FromBody] CreateUserRequest request,
+        CancellationToken cancellationToken)
+    {
+        return HandleResult(
+            await _service.CreateAsync(request, cancellationToken),
+            StatusCodes.Status201Created);
+    }
+
+    [HttpPatch("{id:guid}/role")]
+    public async Task<IActionResult> ChangeRole(
+        [FromRoute] Guid id,
+        [FromBody] ChangeUserRoleRequest request,
+        CancellationToken cancellationToken)
+    {
+        return HandleResult(
+            await _service.ChangeRoleAsync(id, request, cancellationToken));
+    }
+
+    [HttpPatch("{id:guid}/deactivate")]
+    public async Task<IActionResult> Deactivate(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken)
+    {
+        return HandleResult(
+            await _service.DeactivateAsync(id, cancellationToken));
+    }
+}
