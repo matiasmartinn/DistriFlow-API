@@ -13,9 +13,14 @@ public interface IProductRepository
         DistributorId distributorId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Product>> GetActiveAsync(
+        DistributorId distributorId,
+        CancellationToken cancellationToken = default);
+
     Task<bool> ExistsBySkuAsync(
         DistributorId distributorId,
         Sku sku,
+        ProductId? excludedId = null,
         CancellationToken cancellationToken = default);
 
     Task AddAsync(

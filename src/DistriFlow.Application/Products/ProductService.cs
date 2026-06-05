@@ -1,0 +1,213 @@
+using DistriFlow.Application.Common.Results;
+using DistriFlow.Application.Common.Security;
+using DistriFlow.Application.Products.DTOs.Requests;
+using DistriFlow.Application.Products.DTOs.Responses;
+using DistriFlow.Application.Products.Mappers;
+using DistriFlow.Domain.Common;
+using DistriFlow.Domain.Common.Errors;
+using DistriFlow.Domain.Common.ValueObjects;
+using DistriFlow.Domain.Products;
+using DistriFlow.Domain.Users;
+
+namespace DistriFlow.Application.Products;
+
+public sealed class ProductService : IProductService
+{
+    private readonly IProductRepository _productRepository;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly ICurrentUserContext _currentUserContext;
+
+    public ProductService(
+        IProductRepository productRepository,
+        IUnitOfWork unitOfWork,
+        ICurrentUserContext currentUserContext)
+    {
+        _productRepository = productRepository;
+        _unitOfWork = unitOfWork;
+        _currentUserContext = currentUserContext;
+    }
+
+    public async Task<Result<ProductDto>> CreateAsync(
+        CreateProductRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var sku = CreateSku(request.Sku);
+
+            if (await SkuExistsAsync(sku, null, cancellationToken))
+                return SkuConflict();
+
+            var product = Product.Create(
+                _currentUserContext.DistributorId,
+                request.Name,
+                sku,
+                SaleUnit.Create(request.SaleUnit),
+                Money.Create(request.BasePrice));
+
+            await _productRepository.AddAsync(product, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return product.ToDto();
+        }
+        catch (DomainException exception)
+        {
+            return Error.Domain("product.invalid", exception.Message);
+        }
+    }
+
+    public async Task<Result<IReadOnlyList<ProductDto>>> GetAllAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var products = _currentUserContext.Role == Role.SalesRep
+            ? await _productRepository.GetActiveAsync(
+                _currentUserContext.DistributorId,
+                cancellationToken)
+            : await _productRepository.GetAllAsync(
+                _currentUserContext.DistributorId,
+                cancellationToken);
+
+        return products.Select(product => product.ToDto()).ToList();
+    }
+
+    public async Task<Result<ProductDto>> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var product = await GetProductAsync(id, cancellationToken);
+
+            if (product is null
+                || (_currentUserContext.Role == Role.SalesRep
+                    && product.Status != ProductStatus.Active))
+            {
+                return ProductNotFound();
+            }
+
+            return product.ToDto();
+        }
+        catch (DomainException exception)
+        {
+            return Error.Validation("product.invalid_id", exception.Message);
+        }
+    }
+
+    public async Task<Result> UpdateAsync(
+        Guid id,
+        UpdateProductRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var product = await GetProductAsync(id, cancellationToken);
+
+            if (product is null)
+                return ProductNotFound();
+
+            var sku = CreateSku(request.Sku);
+
+            if (await SkuExistsAsync(sku, product.Id, cancellationToken))
+                return SkuConflict();
+
+            product.Update(
+                request.Name,
+                sku,
+                SaleUnit.Create(request.SaleUnit),
+                Money.Create(request.BasePrice));
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return Result.Success();
+        }
+        catch (DomainException exception)
+        {
+            return Error.Domain("product.invalid", exception.Message);
+        }
+    }
+
+    public Task<Result> DiscontinueAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        return ChangeStatusAsync(
+            id,
+            product => product.Discontinue(),
+            cancellationToken);
+    }
+
+    public Task<Result> ReactivateAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        return ChangeStatusAsync(
+            id,
+            product => product.Reactivate(),
+            cancellationToken);
+    }
+
+    private Task<Product?> GetProductAsync(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        return _productRepository.GetByIdAsync(
+            _currentUserContext.DistributorId,
+            ProductId.From(id),
+            cancellationToken);
+    }
+
+    private async Task<Result> ChangeStatusAsync(
+        Guid id,
+        Action<Product> changeStatus,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var product = await GetProductAsync(id, cancellationToken);
+
+            if (product is null)
+                return ProductNotFound();
+
+            changeStatus(product);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return Result.Success();
+        }
+        catch (DomainException exception)
+        {
+            return Error.Domain("product.invalid_status", exception.Message);
+        }
+    }
+
+    private Task<bool> SkuExistsAsync(
+        Sku? sku,
+        ProductId? excludedId,
+        CancellationToken cancellationToken)
+    {
+        return sku is null
+            ? Task.FromResult(false)
+            : _productRepository.ExistsBySkuAsync(
+                _currentUserContext.DistributorId,
+                sku,
+                excludedId,
+                cancellationToken);
+    }
+
+    private static Sku? CreateSku(string? value)
+    {
+        return value is null ? null : Sku.Create(value);
+    }
+
+    private static Error ProductNotFound()
+    {
+        return Error.NotFound(
+            "product.not_found",
+            "Producto no encontrado.");
+    }
+
+    private static Error SkuConflict()
+    {
+        return Error.Conflict(
+            "product.sku_conflict",
+            "Ya existe un producto con ese SKU en la distribuidora.");
+    }
+}

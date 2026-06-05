@@ -1,5 +1,6 @@
 using DistriFlow.Domain.Common;
 using DistriFlow.Domain.Distributors;
+using DistriFlow.Domain.Products;
 using DistriFlow.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,6 +12,7 @@ public sealed class DistriFlowDbContext : DbContext, IUnitOfWork
         : base(options) { }
 
     public DbSet<Distributor> Distributors => Set<Distributor>();
+    public DbSet<Product> Products => Set<Product>();
     public DbSet<User> Users => Set<User>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

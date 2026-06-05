@@ -60,6 +60,21 @@ public sealed class Product
         BasePrice = basePrice;
     }
 
+    public void Update(
+        string name,
+        Sku? sku,
+        SaleUnit saleUnit,
+        Money basePrice)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new DomainException("El nombre del producto es requerido.");
+
+        Name = name.Trim();
+        Sku = sku;
+        SaleUnit = saleUnit;
+        BasePrice = basePrice;
+    }
+
     public void Discontinue()
     {
         Status = ProductStatus.Discontinued;

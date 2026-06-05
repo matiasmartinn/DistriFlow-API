@@ -50,6 +50,58 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
                     b.ToTable("distributors", (string)null);
                 });
 
+            modelBuilder.Entity("DistriFlow.Domain.Products.Product", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("BasePrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("base_price");
+
+                    b.Property<Guid>("DistributorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("distributor_id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("SaleUnit")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("sale_unit");
+
+                    b.Property<string>("Sku")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("sku");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_products");
+
+                    b.HasIndex("DistributorId")
+                        .HasDatabaseName("ix_products_distributor_id");
+
+                    b.HasIndex("DistributorId", "Sku")
+                        .IsUnique()
+                        .HasDatabaseName("ix_products_distributor_id_sku")
+                        .HasFilter("sku IS NOT NULL");
+
+                    b.ToTable("products", (string)null);
+                });
+
             modelBuilder.Entity("DistriFlow.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")

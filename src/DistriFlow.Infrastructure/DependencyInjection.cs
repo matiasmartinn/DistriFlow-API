@@ -1,5 +1,6 @@
 using DistriFlow.Domain.Common;
 using DistriFlow.Domain.Distributors;
+using DistriFlow.Domain.Products;
 using DistriFlow.Domain.Users;
 using DistriFlow.Infrastructure.Persistence;
 using DistriFlow.Infrastructure.Repositories;
@@ -27,6 +28,7 @@ public static class DependencyInjection
             provider => provider.GetRequiredService<DistriFlowDbContext>());
 
         services.AddScoped<IDistributorRepository, DistributorRepository>();
+        services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
 
         return services;
