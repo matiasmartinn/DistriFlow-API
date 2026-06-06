@@ -9,6 +9,11 @@ public interface IOrderRepository
         OrderId id,
         CancellationToken cancellationToken = default);
 
+    Task<bool> TryMarkConfirmedAsync(
+        DistributorId distributorId,
+        OrderId id,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(
         Order order,
         CancellationToken cancellationToken = default);

@@ -90,6 +90,16 @@ public sealed class Order
         _orderLines.Remove(GetLine(productId));
     }
 
+    public void Confirm()
+    {
+        EnsureDraft();
+
+        if (_orderLines.Count == 0)
+            throw new DomainException("El pedido debe tener al menos una línea para confirmarse.");
+
+        Status = OrderStatus.Confirmed;
+    }
+
     public OrderLine? FindLine(ProductId productId)
     {
         return _orderLines.FirstOrDefault(line => line.ProductId == productId);

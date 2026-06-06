@@ -11,6 +11,7 @@ using DistriFlow.Domain.Distributors;
 using DistriFlow.Domain.Orders;
 using DistriFlow.Domain.PriceLists;
 using DistriFlow.Domain.Products;
+using DistriFlow.Domain.Stocks;
 
 namespace DistriFlow.Application.Orders.Commands;
 
@@ -21,6 +22,7 @@ public sealed class OrderCommandService : IOrderCommandService
     private readonly IProductRepository _productRepository;
     private readonly IPriceListRepository _priceListRepository;
     private readonly IDistributorRepository _distributorRepository;
+    private readonly IStockRepository _stockRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserContext _currentUserContext;
 
@@ -30,6 +32,7 @@ public sealed class OrderCommandService : IOrderCommandService
         IProductRepository productRepository,
         IPriceListRepository priceListRepository,
         IDistributorRepository distributorRepository,
+        IStockRepository stockRepository,
         IUnitOfWork unitOfWork,
         ICurrentUserContext currentUserContext)
     {
@@ -38,6 +41,7 @@ public sealed class OrderCommandService : IOrderCommandService
         _productRepository = productRepository;
         _priceListRepository = priceListRepository;
         _distributorRepository = distributorRepository;
+        _stockRepository = stockRepository;
         _unitOfWork = unitOfWork;
         _currentUserContext = currentUserContext;
     }
@@ -177,6 +181,63 @@ public sealed class OrderCommandService : IOrderCommandService
         }
     }
 
+    public async Task<Result<OrderDto>> ConfirmAsync(
+        Guid orderId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await _unitOfWork.BeginTransactionAsync(
+            cancellationToken);
+
+        try
+        {
+            var orderResult = await GetEditableOrderAsync(orderId, cancellationToken);
+
+            if (orderResult.IsFailure)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return orderResult.Error;
+            }
+
+            var order = orderResult.Data!;
+            order.Confirm();
+
+            foreach (var line in order.OrderLines.OrderBy(
+                         line => line.ProductId.Value))
+            {
+                var decreased = await _stockRepository.TryDecreaseAsync(
+                    _currentUserContext.DistributorId,
+                    line.ProductId,
+                    line.Quantity,
+                    cancellationToken);
+
+                if (!decreased)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    return InsufficientStock(line.ProductDescription);
+                }
+            }
+
+            var markedConfirmed = await _orderRepository.TryMarkConfirmedAsync(
+                _currentUserContext.DistributorId,
+                order.Id,
+                cancellationToken);
+
+            if (!markedConfirmed)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return OrderConfirmationConflict();
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+            return order.ToDto();
+        }
+        catch (DomainException exception)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Error.Domain("order.invalid_confirmation", exception.Message);
+        }
+    }
+
     private async Task<Result<Order>> GetEditableOrderAsync(
         Guid orderId,
         CancellationToken cancellationToken)
@@ -272,5 +333,19 @@ public sealed class OrderCommandService : IOrderCommandService
         return Error.NotFound(
             "distributor.not_found",
             "Distribuidora no encontrada.");
+    }
+
+    private static Error InsufficientStock(string productDescription)
+    {
+        return Error.Domain(
+            "order.insufficient_stock",
+            $"El stock disponible de {productDescription} es insuficiente.");
+    }
+
+    private static Error OrderConfirmationConflict()
+    {
+        return Error.Conflict(
+            "order.confirmation_conflict",
+            "El pedido ya no se encuentra disponible para confirmar.");
     }
 }

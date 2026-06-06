@@ -24,4 +24,22 @@ public sealed class OrderRepository
                     && order.Id == id,
                 cancellationToken);
     }
+
+    public async Task<bool> TryMarkConfirmedAsync(
+        DistributorId distributorId,
+        OrderId id,
+        CancellationToken cancellationToken = default)
+    {
+        var affectedRows = await DbSet
+            .Where(order => order.DistributorId == distributorId
+                && order.Id == id
+                && order.Status == OrderStatus.Draft)
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(
+                    order => order.Status,
+                    OrderStatus.Confirmed),
+                cancellationToken);
+
+        return affectedRows == 1;
+    }
 }

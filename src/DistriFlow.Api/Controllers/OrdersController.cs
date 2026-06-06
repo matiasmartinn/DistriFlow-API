@@ -76,4 +76,13 @@ public sealed class OrdersController : BaseController
                 productId,
                 cancellationToken));
     }
+
+    [HttpPatch("{id:guid}/confirm")]
+    public async Task<IActionResult> Confirm(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken)
+    {
+        return HandleResult(
+            await _commandService.ConfirmAsync(id, cancellationToken));
+    }
 }

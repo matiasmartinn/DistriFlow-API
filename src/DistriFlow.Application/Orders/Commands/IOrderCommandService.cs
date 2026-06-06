@@ -25,4 +25,8 @@ public interface IOrderCommandService
         Guid orderId,
         Guid productId,
         CancellationToken cancellationToken = default);
+
+    Task<Result<OrderDto>> ConfirmAsync(
+        Guid orderId,
+        CancellationToken cancellationToken = default);
 }
