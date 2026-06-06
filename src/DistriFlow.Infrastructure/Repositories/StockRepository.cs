@@ -1,3 +1,4 @@
+using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.Distributors;
 using DistriFlow.Domain.Products;
 using DistriFlow.Domain.Stocks;
@@ -22,5 +23,26 @@ public sealed class StockRepository
             stock => stock.DistributorId == distributorId
                 && stock.ProductId == productId,
             cancellationToken);
+    }
+
+    public async Task<bool> TryDecreaseAsync(
+        DistributorId distributorId,
+        ProductId productId,
+        Quantity quantity,
+        CancellationToken cancellationToken = default)
+    {
+        var affectedRows = await DbSet
+            .Where(stock => stock.DistributorId == distributorId
+                && stock.ProductId == productId
+                && stock.Available.Unit == quantity.Unit
+                && quantity.Amount > 0
+                && stock.Available.Amount >= quantity.Amount)
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(
+                    stock => stock.Available.Amount,
+                    stock => stock.Available.Amount - quantity.Amount),
+                cancellationToken);
+
+        return affectedRows == 1;
     }
 }

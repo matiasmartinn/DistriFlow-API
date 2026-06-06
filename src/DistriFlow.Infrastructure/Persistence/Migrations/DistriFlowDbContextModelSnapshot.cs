@@ -88,6 +88,49 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
                     b.ToTable("distributors", (string)null);
                 });
 
+            modelBuilder.Entity("DistriFlow.Domain.Orders.Order", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<Guid>("DistributorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("distributor_id");
+
+                    b.Property<Guid>("SalesRepId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sales_rep_id");
+
+                    b.Property<DateTime>("StartedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at_utc");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_orders");
+
+                    b.HasIndex("DistributorId")
+                        .HasDatabaseName("ix_orders_distributor_id");
+
+                    b.HasIndex("DistributorId", "CustomerId")
+                        .HasDatabaseName("ix_orders_distributor_id_customer_id");
+
+                    b.HasIndex("DistributorId", "SalesRepId")
+                        .HasDatabaseName("ix_orders_distributor_id_sales_rep_id");
+
+                    b.ToTable("orders", (string)null);
+                });
+
             modelBuilder.Entity("DistriFlow.Domain.PriceLists.PriceList", b =>
                 {
                     b.Property<Guid>("Id")
@@ -376,6 +419,75 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
 
                     b.Navigation("Contact")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("DistriFlow.Domain.Orders.Order", b =>
+                {
+                    b.OwnsMany("DistriFlow.Domain.Orders.OrderLine", "OrderLines", b1 =>
+                        {
+                            b1.Property<Guid>("OrderId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("order_id");
+
+                            b1.Property<Guid>("ProductId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("product_id");
+
+                            b1.Property<string>("ProductDescription")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)")
+                                .HasColumnName("product_description");
+
+                            b1.Property<decimal>("UnitPrice")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("numeric(18,2)")
+                                .HasColumnName("unit_price");
+
+                            b1.HasKey("OrderId", "ProductId")
+                                .HasName("pk_order_lines");
+
+                            b1.ToTable("order_lines", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("OrderId")
+                                .HasConstraintName("fk_order_lines_orders_order_id");
+
+                            b1.OwnsOne("DistriFlow.Domain.Common.ValueObjects.Quantity", "Quantity", b2 =>
+                                {
+                                    b2.Property<Guid>("OrderLineOrderId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("order_id");
+
+                                    b2.Property<Guid>("OrderLineProductId")
+                                        .HasColumnType("uuid")
+                                        .HasColumnName("product_id");
+
+                                    b2.Property<decimal>("Amount")
+                                        .HasPrecision(18, 3)
+                                        .HasColumnType("numeric(18,3)")
+                                        .HasColumnName("amount");
+
+                                    b2.Property<string>("Unit")
+                                        .IsRequired()
+                                        .HasMaxLength(50)
+                                        .HasColumnType("character varying(50)")
+                                        .HasColumnName("sale_unit");
+
+                                    b2.HasKey("OrderLineOrderId", "OrderLineProductId");
+
+                                    b2.ToTable("order_lines");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("OrderLineOrderId", "OrderLineProductId")
+                                        .HasConstraintName("fk_order_lines_order_lines_order_id_product_id");
+                                });
+
+                            b1.Navigation("Quantity")
+                                .IsRequired();
+                        });
+
+                    b.Navigation("OrderLines");
                 });
 
             modelBuilder.Entity("DistriFlow.Domain.PriceLists.PriceList", b =>

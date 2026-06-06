@@ -1,6 +1,7 @@
 using DistriFlow.Domain.Common;
 using DistriFlow.Domain.Customers;
 using DistriFlow.Domain.Distributors;
+using DistriFlow.Domain.Orders;
 using DistriFlow.Domain.PriceLists;
 using DistriFlow.Domain.Products;
 using DistriFlow.Domain.Stocks;
@@ -16,10 +17,18 @@ public sealed class DistriFlowDbContext : DbContext, IUnitOfWork
 
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Distributor> Distributors => Set<Distributor>();
+    public DbSet<Order> Orders => Set<Order>();
     public DbSet<PriceList> PriceLists => Set<PriceList>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Stock> Stocks => Set<Stock>();
     public DbSet<User> Users => Set<User>();
+
+    public async Task<IUnitOfWorkTransaction> BeginTransactionAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var transaction = await Database.BeginTransactionAsync(cancellationToken);
+        return new EfUnitOfWorkTransaction(transaction);
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

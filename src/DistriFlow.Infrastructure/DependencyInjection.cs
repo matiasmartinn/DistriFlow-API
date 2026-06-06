@@ -1,6 +1,7 @@
 using DistriFlow.Domain.Common;
 using DistriFlow.Domain.Customers;
 using DistriFlow.Domain.Distributors;
+using DistriFlow.Domain.Orders;
 using DistriFlow.Domain.PriceLists;
 using DistriFlow.Domain.Products;
 using DistriFlow.Domain.Stocks;
@@ -32,6 +33,7 @@ public static class DependencyInjection
 
         services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<IDistributorRepository, DistributorRepository>();
+        services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddScoped<IPriceListRepository, PriceListRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IStockRepository, StockRepository>();

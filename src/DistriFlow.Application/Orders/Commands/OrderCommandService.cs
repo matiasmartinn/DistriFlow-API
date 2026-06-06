@@ -1,0 +1,276 @@
+using DistriFlow.Application.Common.Results;
+using DistriFlow.Application.Common.Security;
+using DistriFlow.Application.Orders.DTOs.Requests;
+using DistriFlow.Application.Orders.DTOs.Responses;
+using DistriFlow.Application.Orders.Mappers;
+using DistriFlow.Domain.Common;
+using DistriFlow.Domain.Common.Errors;
+using DistriFlow.Domain.Common.ValueObjects;
+using DistriFlow.Domain.Customers;
+using DistriFlow.Domain.Distributors;
+using DistriFlow.Domain.Orders;
+using DistriFlow.Domain.PriceLists;
+using DistriFlow.Domain.Products;
+
+namespace DistriFlow.Application.Orders.Commands;
+
+public sealed class OrderCommandService : IOrderCommandService
+{
+    private readonly IOrderRepository _orderRepository;
+    private readonly ICustomerRepository _customerRepository;
+    private readonly IProductRepository _productRepository;
+    private readonly IPriceListRepository _priceListRepository;
+    private readonly IDistributorRepository _distributorRepository;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly ICurrentUserContext _currentUserContext;
+
+    public OrderCommandService(
+        IOrderRepository orderRepository,
+        ICustomerRepository customerRepository,
+        IProductRepository productRepository,
+        IPriceListRepository priceListRepository,
+        IDistributorRepository distributorRepository,
+        IUnitOfWork unitOfWork,
+        ICurrentUserContext currentUserContext)
+    {
+        _orderRepository = orderRepository;
+        _customerRepository = customerRepository;
+        _productRepository = productRepository;
+        _priceListRepository = priceListRepository;
+        _distributorRepository = distributorRepository;
+        _unitOfWork = unitOfWork;
+        _currentUserContext = currentUserContext;
+    }
+
+    public async Task<Result<OrderDto>> StartAsync(
+        StartOrderRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var availabilityError = await GetOrderingAvailabilityErrorAsync(
+                request.CustomerId,
+                cancellationToken);
+
+            if (availabilityError is not null)
+                return availabilityError;
+
+            var order = Order.Start(
+                _currentUserContext.DistributorId,
+                CustomerId.From(request.CustomerId),
+                _currentUserContext.UserId,
+                DateTime.UtcNow);
+
+            await _orderRepository.AddAsync(order, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return order.ToDto();
+        }
+        catch (DomainException exception)
+        {
+            return Error.Domain("order.invalid", exception.Message);
+        }
+    }
+
+    public async Task<Result<OrderDto>> AddLineAsync(
+        Guid orderId,
+        AddOrderLineRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var orderResult = await GetEditableOrderAsync(orderId, cancellationToken);
+
+            if (orderResult.IsFailure)
+                return orderResult.Error;
+
+            var product = await _productRepository.GetByIdAsync(
+                _currentUserContext.DistributorId,
+                ProductId.From(request.ProductId),
+                cancellationToken);
+
+            if (product is null || product.Status != ProductStatus.Active)
+                return ProductNotFound();
+
+            var customer = await _customerRepository.GetByIdAsync(
+                _currentUserContext.DistributorId,
+                orderResult.Data!.CustomerId,
+                cancellationToken);
+
+            var unitPrice = await ResolvePriceAsync(
+                customer!,
+                product,
+                cancellationToken);
+
+            orderResult.Data.AddLine(
+                product.Id,
+                product.Name,
+                Quantity.Create(request.Amount, product.SaleUnit),
+                unitPrice);
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return orderResult.Data.ToDto();
+        }
+        catch (DomainException exception)
+        {
+            return Error.Domain("order.invalid_line", exception.Message);
+        }
+    }
+
+    public async Task<Result<OrderDto>> ChangeLineQuantityAsync(
+        Guid orderId,
+        Guid productId,
+        ChangeOrderLineQuantityRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var orderResult = await GetEditableOrderAsync(orderId, cancellationToken);
+
+            if (orderResult.IsFailure)
+                return orderResult.Error;
+
+            var parsedProductId = ProductId.From(productId);
+            var line = orderResult.Data!.FindLine(parsedProductId);
+
+            if (line is null)
+                return OrderLineNotFound();
+
+            orderResult.Data.ChangeLineQuantity(
+                parsedProductId,
+                Quantity.Create(request.Amount, line.Quantity.Unit));
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return orderResult.Data.ToDto();
+        }
+        catch (DomainException exception)
+        {
+            return Error.Domain("order.invalid_line", exception.Message);
+        }
+    }
+
+    public async Task<Result<OrderDto>> RemoveLineAsync(
+        Guid orderId,
+        Guid productId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var orderResult = await GetEditableOrderAsync(orderId, cancellationToken);
+
+            if (orderResult.IsFailure)
+                return orderResult.Error;
+
+            var parsedProductId = ProductId.From(productId);
+
+            if (orderResult.Data!.FindLine(parsedProductId) is null)
+                return OrderLineNotFound();
+
+            orderResult.Data.RemoveLine(parsedProductId);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return orderResult.Data.ToDto();
+        }
+        catch (DomainException exception)
+        {
+            return Error.Domain("order.invalid_line", exception.Message);
+        }
+    }
+
+    private async Task<Result<Order>> GetEditableOrderAsync(
+        Guid orderId,
+        CancellationToken cancellationToken)
+    {
+        var order = await _orderRepository.GetByIdAsync(
+            _currentUserContext.DistributorId,
+            OrderId.From(orderId),
+            cancellationToken);
+
+        if (order is null)
+            return OrderNotFound();
+
+        var availabilityError = await GetOrderingAvailabilityErrorAsync(
+            order.CustomerId.Value,
+            cancellationToken);
+
+        return availabilityError is null ? order : availabilityError;
+    }
+
+    private async Task<Error?> GetOrderingAvailabilityErrorAsync(
+        Guid customerId,
+        CancellationToken cancellationToken)
+    {
+        var distributor = await _distributorRepository.GetByIdAsync(
+            _currentUserContext.DistributorId,
+            cancellationToken);
+
+        if (distributor is null)
+            return DistributorNotFound();
+
+        if (distributor.Status != DistributorStatus.Active)
+        {
+            return Error.Domain(
+                "order.distributor_suspended",
+                "No se pueden tomar pedidos para una distribuidora suspendida.");
+        }
+
+        var customer = await _customerRepository.GetByIdAsync(
+            _currentUserContext.DistributorId,
+            CustomerId.From(customerId),
+            cancellationToken);
+
+        if (customer is null)
+            return CustomerNotFound();
+
+        return customer.Status == CustomerStatus.Active
+            ? null
+            : Error.Domain(
+                "order.customer_inactive",
+                "No se pueden tomar pedidos para un cliente inactivo.");
+    }
+
+    private async Task<Money> ResolvePriceAsync(
+        Customer customer,
+        Product product,
+        CancellationToken cancellationToken)
+    {
+        if (!customer.PriceListId.HasValue)
+            return product.BasePrice;
+
+        var priceList = await _priceListRepository.GetByIdAsync(
+            _currentUserContext.DistributorId,
+            customer.PriceListId.Value,
+            cancellationToken);
+
+        return priceList?.FindPrice(product.Id) ?? product.BasePrice;
+    }
+
+    private static Error OrderNotFound()
+    {
+        return Error.NotFound("order.not_found", "Pedido no encontrado.");
+    }
+
+    private static Error OrderLineNotFound()
+    {
+        return Error.NotFound(
+            "order.line_not_found",
+            "Línea del pedido no encontrada.");
+    }
+
+    private static Error CustomerNotFound()
+    {
+        return Error.NotFound("customer.not_found", "Cliente no encontrado.");
+    }
+
+    private static Error ProductNotFound()
+    {
+        return Error.NotFound("product.not_found", "Producto no encontrado.");
+    }
+
+    private static Error DistributorNotFound()
+    {
+        return Error.NotFound(
+            "distributor.not_found",
+            "Distribuidora no encontrada.");
+    }
+}
