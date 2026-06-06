@@ -85,4 +85,13 @@ public sealed class OrdersController : BaseController
         return HandleResult(
             await _commandService.ConfirmAsync(id, cancellationToken));
     }
+
+    [HttpPatch("{id:guid}/cancel")]
+    public async Task<IActionResult> Cancel(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken)
+    {
+        return HandleResult(
+            await _commandService.CancelAsync(id, cancellationToken));
+    }
 }

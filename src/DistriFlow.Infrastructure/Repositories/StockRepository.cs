@@ -45,4 +45,24 @@ public sealed class StockRepository
 
         return affectedRows == 1;
     }
+
+    public async Task<bool> TryIncreaseAsync(
+        DistributorId distributorId,
+        ProductId productId,
+        Quantity quantity,
+        CancellationToken cancellationToken = default)
+    {
+        var affectedRows = await DbSet
+            .Where(stock => stock.DistributorId == distributorId
+                && stock.ProductId == productId
+                && stock.Available.Unit == quantity.Unit
+                && quantity.Amount > 0)
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(
+                    stock => stock.Available.Amount,
+                    stock => stock.Available.Amount + quantity.Amount),
+                cancellationToken);
+
+        return affectedRows == 1;
+    }
 }

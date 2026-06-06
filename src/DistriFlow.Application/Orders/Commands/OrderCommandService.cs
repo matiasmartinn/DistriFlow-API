@@ -238,6 +238,70 @@ public sealed class OrderCommandService : IOrderCommandService
         }
     }
 
+    public async Task<Result<OrderDto>> CancelAsync(
+        Guid orderId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await _unitOfWork.BeginTransactionAsync(
+            cancellationToken);
+
+        try
+        {
+            var order = await _orderRepository.GetByIdAsync(
+                _currentUserContext.DistributorId,
+                OrderId.From(orderId),
+                cancellationToken);
+
+            if (order is null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return OrderNotFound();
+            }
+
+            var previousStatus = order.Status;
+            order.Cancel();
+
+            if (previousStatus == OrderStatus.Confirmed)
+            {
+                foreach (var line in order.OrderLines.OrderBy(
+                             line => line.ProductId.Value))
+                {
+                    var increased = await _stockRepository.TryIncreaseAsync(
+                        _currentUserContext.DistributorId,
+                        line.ProductId,
+                        line.Quantity,
+                        cancellationToken);
+
+                    if (!increased)
+                    {
+                        await transaction.RollbackAsync(cancellationToken);
+                        return StockNotFound(line.ProductDescription);
+                    }
+                }
+            }
+
+            var markedCancelled = await _orderRepository.TryMarkCancelledAsync(
+                _currentUserContext.DistributorId,
+                order.Id,
+                previousStatus,
+                cancellationToken);
+
+            if (!markedCancelled)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return OrderCancellationConflict();
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+            return order.ToDto();
+        }
+        catch (DomainException exception)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Error.Domain("order.invalid_cancellation", exception.Message);
+        }
+    }
+
     private async Task<Result<Order>> GetEditableOrderAsync(
         Guid orderId,
         CancellationToken cancellationToken)
@@ -347,5 +411,19 @@ public sealed class OrderCommandService : IOrderCommandService
         return Error.Conflict(
             "order.confirmation_conflict",
             "El pedido ya no se encuentra disponible para confirmar.");
+    }
+
+    private static Error StockNotFound(string productDescription)
+    {
+        return Error.Conflict(
+            "order.stock_not_found",
+            $"No se encontró el stock de {productDescription} para revertir el pedido.");
+    }
+
+    private static Error OrderCancellationConflict()
+    {
+        return Error.Conflict(
+            "order.cancellation_conflict",
+            "El pedido ya no se encuentra disponible para cancelar.");
     }
 }

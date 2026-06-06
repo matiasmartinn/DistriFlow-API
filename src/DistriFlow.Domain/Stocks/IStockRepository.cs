@@ -17,6 +17,12 @@ public interface IStockRepository
         Quantity quantity,
         CancellationToken cancellationToken = default);
 
+    Task<bool> TryIncreaseAsync(
+        DistributorId distributorId,
+        ProductId productId,
+        Quantity quantity,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(
         Stock stock,
         CancellationToken cancellationToken = default);

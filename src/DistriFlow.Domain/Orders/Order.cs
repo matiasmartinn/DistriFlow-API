@@ -100,6 +100,14 @@ public sealed class Order
         Status = OrderStatus.Confirmed;
     }
 
+    public void Cancel()
+    {
+        if (Status == OrderStatus.Cancelled)
+            throw new DomainException("El pedido ya se encuentra cancelado.");
+
+        Status = OrderStatus.Cancelled;
+    }
+
     public OrderLine? FindLine(ProductId productId)
     {
         return _orderLines.FirstOrDefault(line => line.ProductId == productId);
