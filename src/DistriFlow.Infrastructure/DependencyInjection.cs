@@ -3,6 +3,7 @@ using DistriFlow.Domain.Customers;
 using DistriFlow.Domain.Distributors;
 using DistriFlow.Domain.PriceLists;
 using DistriFlow.Domain.Products;
+using DistriFlow.Domain.Stocks;
 using DistriFlow.Domain.Users;
 using DistriFlow.Infrastructure.Persistence;
 using DistriFlow.Infrastructure.Repositories;
@@ -33,6 +34,7 @@ public static class DependencyInjection
         services.AddScoped<IDistributorRepository, DistributorRepository>();
         services.AddScoped<IPriceListRepository, PriceListRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<IStockRepository, StockRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
 
         return services;

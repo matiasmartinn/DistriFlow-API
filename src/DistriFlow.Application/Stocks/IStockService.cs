@@ -1,0 +1,22 @@
+using DistriFlow.Application.Common.Results;
+using DistriFlow.Application.Stocks.DTOs.Requests;
+using DistriFlow.Application.Stocks.DTOs.Responses;
+
+namespace DistriFlow.Application.Stocks;
+
+public interface IStockService
+{
+    Task<Result<StockDto>> GetByProductIdAsync(
+        Guid productId,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<StockDto>> IncreaseAsync(
+        Guid productId,
+        IncreaseStockRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<StockDto>> AdjustAsync(
+        Guid productId,
+        AdjustStockRequest request,
+        CancellationToken cancellationToken = default);
+}

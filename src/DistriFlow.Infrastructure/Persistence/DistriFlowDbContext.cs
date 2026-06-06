@@ -3,6 +3,7 @@ using DistriFlow.Domain.Customers;
 using DistriFlow.Domain.Distributors;
 using DistriFlow.Domain.PriceLists;
 using DistriFlow.Domain.Products;
+using DistriFlow.Domain.Stocks;
 using DistriFlow.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,6 +18,7 @@ public sealed class DistriFlowDbContext : DbContext, IUnitOfWork
     public DbSet<Distributor> Distributors => Set<Distributor>();
     public DbSet<PriceList> PriceLists => Set<PriceList>();
     public DbSet<Product> Products => Set<Product>();
+    public DbSet<Stock> Stocks => Set<Stock>();
     public DbSet<User> Users => Set<User>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

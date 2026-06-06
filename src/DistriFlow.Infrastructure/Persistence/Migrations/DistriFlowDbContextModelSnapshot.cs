@@ -165,6 +165,33 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
                     b.ToTable("products", (string)null);
                 });
 
+            modelBuilder.Entity("DistriFlow.Domain.Stocks.Stock", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("DistributorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("distributor_id");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_stocks");
+
+                    b.HasIndex("DistributorId")
+                        .HasDatabaseName("ix_stocks_distributor_id");
+
+                    b.HasIndex("DistributorId", "ProductId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_stocks_distributor_id_product_id");
+
+                    b.ToTable("stocks", (string)null);
+                });
+
             modelBuilder.Entity("DistriFlow.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -379,6 +406,38 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
                         });
 
                     b.Navigation("ProductPrices");
+                });
+
+            modelBuilder.Entity("DistriFlow.Domain.Stocks.Stock", b =>
+                {
+                    b.OwnsOne("DistriFlow.Domain.Common.ValueObjects.Quantity", "Available", b1 =>
+                        {
+                            b1.Property<Guid>("StockId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<decimal>("Amount")
+                                .HasPrecision(18, 3)
+                                .HasColumnType("numeric(18,3)")
+                                .HasColumnName("available");
+
+                            b1.Property<string>("Unit")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("sale_unit");
+
+                            b1.HasKey("StockId");
+
+                            b1.ToTable("stocks");
+
+                            b1.WithOwner()
+                                .HasForeignKey("StockId")
+                                .HasConstraintName("fk_stocks_stocks_id");
+                        });
+
+                    b.Navigation("Available")
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }
