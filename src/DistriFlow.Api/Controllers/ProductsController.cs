@@ -1,3 +1,4 @@
+using DistriFlow.Api.Security;
 using DistriFlow.Application.Products;
 using DistriFlow.Application.Products.DTOs.Requests;
 using Microsoft.AspNetCore.Authorization;
@@ -5,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DistriFlow.Api.Controllers;
 
-[Authorize]
+[Authorize(Policy = AuthorizationPolicies.ActiveDistributor)]
 public sealed class ProductsController : BaseController
 {
     private readonly IProductService _service;
@@ -30,6 +31,15 @@ public sealed class ProductsController : BaseController
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
         return HandleResult(await _service.GetAllAsync(cancellationToken));
+    }
+
+    [HttpGet("with-stock")]
+    public async Task<IActionResult> GetWithStock(
+        [FromQuery] ProductWithStockListRequest request,
+        CancellationToken cancellationToken)
+    {
+        return HandleResult(
+            await _service.GetWithStockAsync(request, cancellationToken));
     }
 
     [HttpGet("{id:guid}")]

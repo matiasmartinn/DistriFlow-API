@@ -17,6 +17,40 @@ public static class OrderMapper
             order.OrderLines.Select(line => line.ToDto()).ToList());
     }
 
+    public static OrderDetailDto ToDetailDto(
+        this Order order,
+        string customerName,
+        string salesRepName)
+    {
+        return new OrderDetailDto(
+            order.Id.Value,
+            order.CustomerId.Value,
+            customerName,
+            order.SalesRepId.Value,
+            salesRepName,
+            order.StartedAtUtc,
+            order.Status.ToString(),
+            order.Total.Amount,
+            order.OrderLines.Select(line => line.ToDto()).ToList());
+    }
+
+    public static OrderListItemDto ToListItemDto(
+        this Order order,
+        string customerName,
+        string salesRepName)
+    {
+        return new OrderListItemDto(
+            order.Id.Value,
+            order.CustomerId.Value,
+            customerName,
+            order.SalesRepId.Value,
+            salesRepName,
+            order.StartedAtUtc,
+            order.Status.ToString(),
+            order.Total.Amount,
+            order.OrderLines.Count);
+    }
+
     private static OrderLineDto ToDto(this OrderLine line)
     {
         return new OrderLineDto(

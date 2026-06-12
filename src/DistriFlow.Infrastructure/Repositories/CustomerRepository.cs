@@ -31,4 +31,16 @@ public sealed class CustomerRepository
             customer => customer.DistributorId == distributorId,
             cancellationToken);
     }
+
+    public async Task<IReadOnlyList<Customer>> GetByIdsAsync(
+        DistributorId distributorId,
+        IReadOnlyCollection<CustomerId> ids,
+        CancellationToken cancellationToken = default)
+    {
+        return await DbSet
+            .AsNoTracking()
+            .Where(customer => customer.DistributorId == distributorId
+                && ids.Contains(customer.Id))
+            .ToListAsync(cancellationToken);
+    }
 }

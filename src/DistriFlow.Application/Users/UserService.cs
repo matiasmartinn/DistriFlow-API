@@ -1,3 +1,4 @@
+using DistriFlow.Application.Common.Pagination;
 using DistriFlow.Application.Common.Results;
 using DistriFlow.Application.Common.Security;
 using DistriFlow.Application.Users.DTOs.Requests;
@@ -38,13 +39,12 @@ public sealed class UserService : IUserService
             var email = Email.Create(request.Email);
 
             if (await _userRepository.ExistsByEmailAsync(
-                    _currentUserContext.DistributorId,
                     email,
                     cancellationToken))
             {
                 return Error.Conflict(
                     "user.email_conflict",
-                    "Ya existe un usuario con ese email en la distribuidora.");
+                    "Ya existe un usuario con ese email.");
             }
 
             var user = User.Create(
@@ -62,6 +62,45 @@ public sealed class UserService : IUserService
         catch (DomainException exception)
         {
             return Error.Domain("user.invalid", exception.Message);
+        }
+    }
+
+    public async Task<Result<PagedResponse<UserDto>>> GetPagedAsync(
+        UserListRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var role = string.IsNullOrWhiteSpace(request.Role)
+                ? null
+                : Role.From(request.Role);
+
+            if (!TryParseStatus(request.Status, out var status))
+            {
+                return Error.Validation(
+                    "user.invalid_status",
+                    "El estado del usuario es inválido.");
+            }
+
+            var (users, totalCount) = await _userRepository.GetPagedAsync(
+                _currentUserContext.DistributorId,
+                role,
+                status,
+                request.SearchText?.Trim(),
+                request.Page,
+                request.PageSize,
+                cancellationToken);
+
+            return new PagedResponse<UserDto>(
+                users.Select(user => user.ToDto()).ToList(),
+                request.Page,
+                request.PageSize,
+                totalCount,
+                TotalPages(totalCount, request.PageSize));
+        }
+        catch (DomainException exception)
+        {
+            return Error.Validation("user.invalid_filter", exception.Message);
         }
     }
 
@@ -117,5 +156,29 @@ public sealed class UserService : IUserService
         {
             return Error.Domain(errorCode, exception.Message);
         }
+    }
+
+    private static bool TryParseStatus(string? value, out UserStatus? status)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            status = null;
+            return true;
+        }
+
+        if (Enum.TryParse<UserStatus>(value, true, out var parsed)
+            && Enum.IsDefined(parsed))
+        {
+            status = parsed;
+            return true;
+        }
+
+        status = null;
+        return false;
+    }
+
+    private static int TotalPages(int totalCount, int pageSize)
+    {
+        return (int)Math.Ceiling(totalCount / (double)pageSize);
     }
 }

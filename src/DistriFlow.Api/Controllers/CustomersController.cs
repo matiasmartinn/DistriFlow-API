@@ -1,18 +1,25 @@
+using DistriFlow.Api.Security;
 using DistriFlow.Application.Customers;
 using DistriFlow.Application.Customers.DTOs.Requests;
+using DistriFlow.Application.Orders.DTOs.Requests;
+using DistriFlow.Application.Orders.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DistriFlow.Api.Controllers;
 
-[Authorize]
+[Authorize(Policy = AuthorizationPolicies.ActiveDistributor)]
 public sealed class CustomersController : BaseController
 {
     private readonly ICustomerService _service;
+    private readonly IOrderQueryService _orderQueryService;
 
-    public CustomersController(ICustomerService service)
+    public CustomersController(
+        ICustomerService service,
+        IOrderQueryService orderQueryService)
     {
         _service = service;
+        _orderQueryService = orderQueryService;
     }
 
     [HttpPost]
@@ -88,5 +95,18 @@ public sealed class CustomersController : BaseController
     {
         return HandleResult(
             await _service.ResolvePriceAsync(id, productId, cancellationToken));
+    }
+
+    [HttpGet("{id:guid}/orders")]
+    public async Task<IActionResult> GetOrderHistory(
+        [FromRoute] Guid id,
+        [FromQuery] CustomerOrderHistoryRequest request,
+        CancellationToken cancellationToken)
+    {
+        return HandleResult(
+            await _orderQueryService.GetByCustomerIdAsync(
+                id,
+                request,
+                cancellationToken));
     }
 }

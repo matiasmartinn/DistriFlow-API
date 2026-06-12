@@ -1,3 +1,4 @@
+using DistriFlow.Application.Common.Pagination;
 using DistriFlow.Application.Common.Results;
 using DistriFlow.Application.Users.DTOs.Requests;
 using DistriFlow.Application.Users.DTOs.Responses;
@@ -8,6 +9,10 @@ public interface IUserService
 {
     Task<Result<UserDto>> CreateAsync(
         CreateUserRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<PagedResponse<UserDto>>> GetPagedAsync(
+        UserListRequest request,
         CancellationToken cancellationToken = default);
 
     Task<Result> ChangeRoleAsync(

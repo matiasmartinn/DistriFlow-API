@@ -11,6 +11,11 @@ public interface IStockRepository
         ProductId productId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Stock>> GetByProductIdsAsync(
+        DistributorId distributorId,
+        IReadOnlyCollection<ProductId> productIds,
+        CancellationToken cancellationToken = default);
+
     Task<bool> TryDecreaseAsync(
         DistributorId distributorId,
         ProductId productId,

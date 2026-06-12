@@ -1,3 +1,4 @@
+using DistriFlow.Application.Common.Pagination;
 using DistriFlow.Application.Common.Results;
 using DistriFlow.Application.Common.Security;
 using DistriFlow.Application.Products.DTOs.Requests;
@@ -7,6 +8,7 @@ using DistriFlow.Domain.Common;
 using DistriFlow.Domain.Common.Errors;
 using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.Products;
+using DistriFlow.Domain.Stocks;
 using DistriFlow.Domain.Users;
 
 namespace DistriFlow.Application.Products;
@@ -14,15 +16,18 @@ namespace DistriFlow.Application.Products;
 public sealed class ProductService : IProductService
 {
     private readonly IProductRepository _productRepository;
+    private readonly IStockRepository _stockRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserContext _currentUserContext;
 
     public ProductService(
         IProductRepository productRepository,
+        IStockRepository stockRepository,
         IUnitOfWork unitOfWork,
         ICurrentUserContext currentUserContext)
     {
         _productRepository = productRepository;
+        _stockRepository = stockRepository;
         _unitOfWork = unitOfWork;
         _currentUserContext = currentUserContext;
     }
@@ -68,6 +73,54 @@ public sealed class ProductService : IProductService
                 cancellationToken);
 
         return products.Select(product => product.ToDto()).ToList();
+    }
+
+    public async Task<Result<PagedResponse<ProductWithStockDto>>> GetWithStockAsync(
+        ProductWithStockListRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!TryParseStatus(request.Status, out var requestedStatus))
+        {
+            return Error.Validation(
+                "product.invalid_status",
+                "El estado del producto es inválido.");
+        }
+
+        if (_currentUserContext.Role == Role.SalesRep
+            && requestedStatus.HasValue
+            && requestedStatus.Value != ProductStatus.Active)
+        {
+            return EmptyProductPage(request.Page, request.PageSize);
+        }
+
+        var status = _currentUserContext.Role == Role.SalesRep
+            ? ProductStatus.Active
+            : requestedStatus;
+
+        var (products, totalCount) = await _productRepository.GetPagedAsync(
+            _currentUserContext.DistributorId,
+            status,
+            request.SearchText?.Trim(),
+            request.Page,
+            request.PageSize,
+            cancellationToken);
+
+        var stocks = await _stockRepository.GetByProductIdsAsync(
+            _currentUserContext.DistributorId,
+            products.Select(product => product.Id).ToList(),
+            cancellationToken);
+
+        var stocksByProduct = stocks.ToDictionary(stock => stock.ProductId);
+        var items = products.Select(product => product.ToWithStockDto(
+                stocksByProduct.GetValueOrDefault(product.Id)))
+            .ToList();
+
+        return new PagedResponse<ProductWithStockDto>(
+            items,
+            request.Page,
+            request.PageSize,
+            totalCount,
+            TotalPages(totalCount, request.PageSize));
     }
 
     public async Task<Result<ProductDto>> GetByIdAsync(
@@ -209,5 +262,41 @@ public sealed class ProductService : IProductService
         return Error.Conflict(
             "product.sku_conflict",
             "Ya existe un producto con ese SKU en la distribuidora.");
+    }
+
+    private static bool TryParseStatus(string? value, out ProductStatus? status)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            status = null;
+            return true;
+        }
+
+        if (Enum.TryParse<ProductStatus>(value, true, out var parsed)
+            && Enum.IsDefined(parsed))
+        {
+            status = parsed;
+            return true;
+        }
+
+        status = null;
+        return false;
+    }
+
+    private static PagedResponse<ProductWithStockDto> EmptyProductPage(
+        int page,
+        int pageSize)
+    {
+        return new PagedResponse<ProductWithStockDto>(
+            [],
+            page,
+            pageSize,
+            0,
+            0);
+    }
+
+    private static int TotalPages(int totalCount, int pageSize)
+    {
+        return (int)Math.Ceiling(totalCount / (double)pageSize);
     }
 }

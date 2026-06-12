@@ -1,3 +1,4 @@
+using DistriFlow.Api.Security;
 using DistriFlow.Application.Orders.Commands;
 using DistriFlow.Application.Orders.DTOs.Requests;
 using DistriFlow.Application.Orders.Queries;
@@ -6,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DistriFlow.Api.Controllers;
 
-[Authorize]
+[Authorize(Policy = AuthorizationPolicies.ActiveDistributor)]
 public sealed class OrdersController : BaseController
 {
     private readonly IOrderCommandService _commandService;
@@ -21,6 +22,7 @@ public sealed class OrdersController : BaseController
     }
 
     [HttpPost]
+    [Authorize(Roles = "SalesRep")]
     public async Task<IActionResult> Start(
         [FromBody] StartOrderRequest request,
         CancellationToken cancellationToken)
@@ -28,6 +30,15 @@ public sealed class OrdersController : BaseController
         return HandleResult(
             await _commandService.StartAsync(request, cancellationToken),
             StatusCodes.Status201Created);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetPaged(
+        [FromQuery] OrderListRequest request,
+        CancellationToken cancellationToken)
+    {
+        return HandleResult(
+            await _queryService.GetPagedAsync(request, cancellationToken));
     }
 
     [HttpGet("{id:guid}")]
@@ -40,6 +51,7 @@ public sealed class OrdersController : BaseController
     }
 
     [HttpPost("{id:guid}/lines")]
+    [Authorize(Roles = "SalesRep")]
     public async Task<IActionResult> AddLine(
         [FromRoute] Guid id,
         [FromBody] AddOrderLineRequest request,
@@ -50,6 +62,7 @@ public sealed class OrdersController : BaseController
     }
 
     [HttpPut("{id:guid}/lines/{productId:guid}")]
+    [Authorize(Roles = "SalesRep")]
     public async Task<IActionResult> ChangeLineQuantity(
         [FromRoute] Guid id,
         [FromRoute] Guid productId,
@@ -65,6 +78,7 @@ public sealed class OrdersController : BaseController
     }
 
     [HttpDelete("{id:guid}/lines/{productId:guid}")]
+    [Authorize(Roles = "SalesRep")]
     public async Task<IActionResult> RemoveLine(
         [FromRoute] Guid id,
         [FromRoute] Guid productId,
@@ -78,6 +92,7 @@ public sealed class OrdersController : BaseController
     }
 
     [HttpPatch("{id:guid}/confirm")]
+    [Authorize(Roles = "SalesRep")]
     public async Task<IActionResult> Confirm(
         [FromRoute] Guid id,
         CancellationToken cancellationToken)
@@ -87,6 +102,7 @@ public sealed class OrdersController : BaseController
     }
 
     [HttpPatch("{id:guid}/cancel")]
+    [Authorize(Roles = "SalesRep")]
     public async Task<IActionResult> Cancel(
         [FromRoute] Guid id,
         CancellationToken cancellationToken)

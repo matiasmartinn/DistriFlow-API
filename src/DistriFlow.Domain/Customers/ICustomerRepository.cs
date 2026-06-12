@@ -13,6 +13,11 @@ public interface ICustomerRepository
         DistributorId distributorId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Customer>> GetByIdsAsync(
+        DistributorId distributorId,
+        IReadOnlyCollection<CustomerId> ids,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(
         Customer customer,
         CancellationToken cancellationToken = default);

@@ -41,6 +41,43 @@ public sealed class ProductRepository
             cancellationToken);
     }
 
+    public async Task<(IReadOnlyList<Product> Items, int TotalCount)> GetPagedAsync(
+        DistributorId distributorId,
+        ProductStatus? status,
+        string? searchText,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var query = DbSet
+            .AsNoTracking()
+            .Where(product => product.DistributorId == distributorId);
+
+        if (status.HasValue)
+            query = query.Where(product => product.Status == status.Value);
+
+        var products = await query
+            .OrderBy(product => product.Name)
+            .ToListAsync(cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            products = products
+                .Where(product => product.Name.Contains(
+                        searchText,
+                        StringComparison.OrdinalIgnoreCase)
+                    || (product.Sku is not null
+                        && product.Sku.Value.Contains(
+                            searchText,
+                            StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+        }
+
+        return (
+            products.Skip((page - 1) * pageSize).Take(pageSize).ToList(),
+            products.Count);
+    }
+
     public Task<bool> ExistsBySkuAsync(
         DistributorId distributorId,
         Sku sku,

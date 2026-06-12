@@ -1,3 +1,4 @@
+using DistriFlow.Api.Security;
 using DistriFlow.Application.PriceLists;
 using DistriFlow.Application.PriceLists.DTOs.Requests;
 using Microsoft.AspNetCore.Authorization;
@@ -5,7 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DistriFlow.Api.Controllers;
 
-[Authorize(Roles = "Administrator")]
+[Authorize(
+    Roles = "Administrator",
+    Policy = AuthorizationPolicies.ActiveDistributor)]
 public sealed class PriceListsController : BaseController
 {
     private readonly IPriceListService _service;

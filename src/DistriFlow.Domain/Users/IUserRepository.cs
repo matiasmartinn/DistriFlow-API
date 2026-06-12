@@ -11,12 +11,24 @@ public interface IUserRepository
         CancellationToken cancellationToken = default);
 
     Task<User?> GetByEmailAsync(
-        DistributorId distributorId,
         Email email,
         CancellationToken cancellationToken = default);
 
-    Task<bool> ExistsByEmailAsync(
+    Task<IReadOnlyList<User>> GetByIdsAsync(
         DistributorId distributorId,
+        IReadOnlyCollection<UserId> ids,
+        CancellationToken cancellationToken = default);
+
+    Task<(IReadOnlyList<User> Items, int TotalCount)> GetPagedAsync(
+        DistributorId distributorId,
+        Role? role,
+        UserStatus? status,
+        string? searchText,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> ExistsByEmailAsync(
         Email email,
         CancellationToken cancellationToken = default);
 

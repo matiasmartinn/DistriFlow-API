@@ -1,3 +1,4 @@
+using DistriFlow.Api.Security;
 using DistriFlow.Application.Auth;
 using DistriFlow.Application.Auth.DTOs;
 using Microsoft.AspNetCore.Authorization;
@@ -22,5 +23,14 @@ public sealed class AuthController : BaseController
     {
         return HandleResult(
             await _authService.LoginAsync(request, cancellationToken));
+    }
+
+    [HttpGet("me")]
+    [Authorize(Policy = AuthorizationPolicies.ActiveUser)]
+    public async Task<IActionResult> GetCurrent(
+        CancellationToken cancellationToken)
+    {
+        return HandleResult(
+            await _authService.GetCurrentAsync(cancellationToken));
     }
 }

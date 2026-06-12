@@ -4,9 +4,6 @@ namespace DistriFlow.Application.Auth.DTOs;
 
 public sealed record LoginRequest
 {
-    [Required(ErrorMessage = "La distribuidora es requerida.")]
-    public Guid DistributorId { get; init; }
-
     [Required(ErrorMessage = "El email es requerido.")]
     [EmailAddress(ErrorMessage = "El formato del email es inválido.")]
     public string Email { get; init; } = null!;

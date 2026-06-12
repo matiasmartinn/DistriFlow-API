@@ -12,6 +12,7 @@ using DistriFlow.Domain.Orders;
 using DistriFlow.Domain.PriceLists;
 using DistriFlow.Domain.Products;
 using DistriFlow.Domain.Stocks;
+using DistriFlow.Domain.Users;
 
 namespace DistriFlow.Application.Orders.Commands;
 
@@ -52,6 +53,9 @@ public sealed class OrderCommandService : IOrderCommandService
     {
         try
         {
+            if (_currentUserContext.Role != Role.SalesRep)
+                return SalesRepRequired();
+
             var availabilityError = await GetOrderingAvailabilityErrorAsync(
                 request.CustomerId,
                 cancellationToken);
@@ -252,7 +256,8 @@ public sealed class OrderCommandService : IOrderCommandService
                 OrderId.From(orderId),
                 cancellationToken);
 
-            if (order is null)
+            if (order is null
+                || order.SalesRepId != _currentUserContext.UserId)
             {
                 await transaction.RollbackAsync(cancellationToken);
                 return OrderNotFound();
@@ -311,7 +316,8 @@ public sealed class OrderCommandService : IOrderCommandService
             OrderId.From(orderId),
             cancellationToken);
 
-        if (order is null)
+        if (order is null
+            || order.SalesRepId != _currentUserContext.UserId)
             return OrderNotFound();
 
         var availabilityError = await GetOrderingAvailabilityErrorAsync(
@@ -373,6 +379,13 @@ public sealed class OrderCommandService : IOrderCommandService
     private static Error OrderNotFound()
     {
         return Error.NotFound("order.not_found", "Pedido no encontrado.");
+    }
+
+    private static Error SalesRepRequired()
+    {
+        return Error.Forbidden(
+            "order.sales_rep_required",
+            "Solo un preventista puede operar pedidos.");
     }
 
     private static Error OrderLineNotFound()

@@ -25,6 +25,18 @@ public sealed class StockRepository
             cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Stock>> GetByProductIdsAsync(
+        DistributorId distributorId,
+        IReadOnlyCollection<ProductId> productIds,
+        CancellationToken cancellationToken = default)
+    {
+        return await DbSet
+            .AsNoTracking()
+            .Where(stock => stock.DistributorId == distributorId
+                && productIds.Contains(stock.ProductId))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<bool> TryDecreaseAsync(
         DistributorId distributorId,
         ProductId productId,

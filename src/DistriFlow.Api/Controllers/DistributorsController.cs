@@ -1,3 +1,4 @@
+using DistriFlow.Api.Security;
 using DistriFlow.Application.Distributors;
 using DistriFlow.Application.Distributors.DTOs.Requests;
 using Microsoft.AspNetCore.Authorization;
@@ -5,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DistriFlow.Api.Controllers;
 
-[Authorize]
+[Authorize(Policy = AuthorizationPolicies.ActiveUser)]
 public sealed class DistributorsController : BaseController
 {
     private readonly IDistributorService _service;
