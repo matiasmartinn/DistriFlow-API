@@ -226,7 +226,7 @@ Required uniqueness baseline:
 | Aggregate | Constraint |
 |---|---|
 | `Distributor` | system-wide unique business name/email only where defined by Domain |
-| `User` | unique `(DistributorId, Email)` |
+| `User` | system-wide unique `Email`; `DistributorId` still scopes tenant operations |
 | `Product` | unique `(DistributorId, Sku)` when SKU is present |
 | `ProductPrice` | unique `(PriceListId, ProductId)` |
 | `Stock` | unique `(DistributorId, ProductId)` |
@@ -273,7 +273,7 @@ specifically requires it and the effect on owned collections is understood.
 
 ### Repository Query Baseline
 
-- `User`: scope email and ID lookups by `DistributorId`.
+- `User`: login email lookup is global; ID and tenant-management lookups are scoped by `DistributorId`.
 - `Product`: scope catalog queries and SKU existence checks by `DistributorId`.
 - `PriceList`: load product prices for price resolution and edits.
 - `Customer`: scope by `DistributorId`; its optional `PriceListId` is a reference.
@@ -313,7 +313,7 @@ The following is a mapping guide, not a final schema.
 | Domain concept | Persistence guidance |
 |---|---|
 | `Distributor` (Distribuidora) | Root table; strongly typed ID; inline contact/address; system-level uniqueness only where documented |
-| `User` (Usuario) | Required `DistributorId`; email unique per distributor; role/status as strings |
+| `User` (Usuario) | Required `DistributorId`; email unique system-wide; role/status as strings |
 | `Product` (Producto) | Required `DistributorId`; inline base `Money`, `SaleUnit`, optional `Sku`; tenant-scoped SKU uniqueness |
 | `PriceList` (ListaDePrecios) | Required `DistributorId`; owned `ProductPrice` rows; one row per product per list |
 | `Customer` (Cliente) | Required `DistributorId`; inline contact/address; optional strongly typed `PriceListId` |

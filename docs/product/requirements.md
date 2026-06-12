@@ -8,7 +8,7 @@
 ### Identidad y acceso (Distributor / User)
 - **RF-01** Registrar una distribuidora junto con su usuario administrador.
 - **RF-02** Suspender y reactivar una distribuidora. Una distribuidora suspendida no puede operar.
-- **RF-03** Crear usuarios con rol `Administrator` o `SalesRep`; email único dentro de la distribuidora.
+- **RF-03** Crear usuarios con rol `Administrator` o `SalesRep`; email de usuario único a nivel sistema.
 - **RF-04** Cambiar el rol y desactivar usuarios.
 - **RF-05** Todo dato y operación está scoped a la distribuidora del usuario autenticado.
 

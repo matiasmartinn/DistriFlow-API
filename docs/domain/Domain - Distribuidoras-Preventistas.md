@@ -135,7 +135,7 @@ Estados:
 * `Activo`, `Inactivo`. (Invitación/onboarding de usuarios se deja fuera del baseline.)
 
 Reglas de negocio:
-* Email único dentro de la distribuidora.
+* Email de usuario único a nivel sistema para permitir login sin identificar la distribuidora.
 * El rol determina qué puede hacer (preventista: tomar pedidos; administrador: catálogo, precios, stock, usuarios).
 
 Operaciones conceptuales:

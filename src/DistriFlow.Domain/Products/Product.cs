@@ -69,9 +69,14 @@ public sealed class Product
         if (string.IsNullOrWhiteSpace(name))
             throw new DomainException("El nombre del producto es requerido.");
 
+        if (saleUnit != SaleUnit)
+        {
+            throw new DomainException(
+                "La unidad de venta no puede modificarse una vez creado el producto.");
+        }
+
         Name = name.Trim();
         Sku = sku;
-        SaleUnit = saleUnit;
         BasePrice = basePrice;
     }
 

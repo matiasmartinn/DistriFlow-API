@@ -29,7 +29,7 @@ Vertical más simple; fija el patrón de catálogo read-only.
 ## EPIC-2 — Identidad y acceso (Distributor + User)
 - **H-2.1** Registrar `Distributor` con su `User` administrador (RF-01).
 - **H-2.2** Suspender/reactivar `Distributor`; bloquear operación si está suspendida (RF-02).
-- **H-2.3** Crear `User` con rol; email único por distribuidora (RF-03).
+- **H-2.3** Crear `User` con rol; email de usuario único a nivel sistema (RF-03).
 - **H-2.4** Cambiar rol y desactivar `User` (RF-04).
 
 ## EPIC-3 — Catálogo de productos (Product)

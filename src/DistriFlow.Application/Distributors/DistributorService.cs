@@ -80,6 +80,15 @@ public sealed class DistributorService : IDistributorService
                 PasswordHash.From(_passwordHasher.Hash(request.Administrator.Password)),
                 Role.Administrator);
 
+            if (await _userRepository.ExistsByEmailAsync(
+                    administrator.Email,
+                    cancellationToken))
+            {
+                return Error.Conflict(
+                    "user.email_conflict",
+                    "Ya existe un usuario con ese email.");
+            }
+
             await _distributorRepository.AddAsync(distributor, cancellationToken);
             await _userRepository.AddAsync(administrator, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);

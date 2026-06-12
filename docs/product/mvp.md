@@ -7,7 +7,7 @@
 
 ### 1. Identidad y acceso (soporte)
 - Alta/onboarding de **Distributor** (tenant) con su **User** administrador.
-- Usuarios con rol `Administrator` o `SalesRep`. Email único por distribuidora.
+- Usuarios con rol `Administrator` o `SalesRep`. Email de usuario único a nivel sistema.
 - Scoping por tenant: todo cuelga de `DistributorId`.
 - Estados: `Distributor` (Active/Suspended); `User` (Active/Inactive).
 

@@ -24,8 +24,9 @@ needs to know *who* is calling and *which tenant* they belong to. The baseline m
 - JWT authentication populates the request principal and a scoped **`ICurrentUserContext`** reads the
   current `DistributorId`, `UserId`, and `Role` for the Application layer.
 - Tenant-owned Application services obtain `DistributorId` from `ICurrentUserContext` and pass it to
-  repository queries. Tenant-owned request bodies must not provide it (RNF-01). Public login may receive
-  it only to disambiguate an email that is unique inside a distributor.
+  repository queries. Tenant-owned request bodies must not provide it (RNF-01). Public login receives
+  only the user email and password; user email is globally unique. Distributor contact email is not used
+  for authentication.
 - Role-based authorization gates endpoints: `SalesRep` takes orders; `Administrator` manages catalog,
   prices, stock and users.
 - **Token issuance (login)** is a thin Infrastructure/Api concern. What stays OUT of baseline (per domain):

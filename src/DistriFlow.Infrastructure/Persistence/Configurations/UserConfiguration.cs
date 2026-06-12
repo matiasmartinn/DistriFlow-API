@@ -58,8 +58,8 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.HasIndex(user => user.DistributorId);
 
-        builder.HasIndex(user => new { user.DistributorId, user.Email })
+        builder.HasIndex(user => user.Email)
             .IsUnique()
-            .HasDatabaseName("ix_users_distributor_id_email");
+            .HasDatabaseName("ix_users_email");
     }
 }

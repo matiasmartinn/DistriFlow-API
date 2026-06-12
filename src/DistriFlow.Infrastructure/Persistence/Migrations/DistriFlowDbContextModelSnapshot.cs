@@ -280,9 +280,9 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
                     b.HasIndex("DistributorId")
                         .HasDatabaseName("ix_users_distributor_id");
 
-                    b.HasIndex("DistributorId", "Email")
+                    b.HasIndex("Email")
                         .IsUnique()
-                        .HasDatabaseName("ix_users_distributor_id_email");
+                        .HasDatabaseName("ix_users_email");
 
                     b.ToTable("users", (string)null);
                 });
