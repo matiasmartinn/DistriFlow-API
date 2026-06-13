@@ -24,13 +24,16 @@ public interface IOrderCommandService
     Task<Result<OrderDto>> RemoveLineAsync(
         Guid orderId,
         Guid productId,
+        long rowVersion,
         CancellationToken cancellationToken = default);
 
     Task<Result<OrderDto>> ConfirmAsync(
         Guid orderId,
+        ConfirmOrderRequest request,
         CancellationToken cancellationToken = default);
 
     Task<Result<OrderDto>> CancelAsync(
         Guid orderId,
+        CancelOrderRequest request,
         CancellationToken cancellationToken = default);
 }

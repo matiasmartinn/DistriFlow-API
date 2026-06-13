@@ -6,4 +6,6 @@ public sealed record StartOrderRequest
 {
     [Required]
     public Guid CustomerId { get; init; }
+
+    public string Origin { get; init; } = "Online";
 }

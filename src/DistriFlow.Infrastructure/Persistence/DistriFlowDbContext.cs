@@ -1,4 +1,5 @@
 using DistriFlow.Domain.Common;
+using DistriFlow.Domain.Common.Errors;
 using DistriFlow.Domain.Customers;
 using DistriFlow.Domain.DistributorConfigurations;
 using DistriFlow.Domain.Distributors;
@@ -31,6 +32,21 @@ public sealed class DistriFlowDbContext : DbContext, IUnitOfWork
     {
         var transaction = await Database.BeginTransactionAsync(cancellationToken);
         return new EfUnitOfWorkTransaction(transaction);
+    }
+
+    public override async Task<int> SaveChangesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await base.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException exception)
+        {
+            throw new ConcurrencyException(
+                "El recurso fue modificado por otra operacion.",
+                exception);
+        }
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

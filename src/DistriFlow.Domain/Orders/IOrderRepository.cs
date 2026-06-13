@@ -25,12 +25,19 @@ public interface IOrderRepository
     Task<bool> TryMarkConfirmedAsync(
         DistributorId distributorId,
         OrderId id,
+        long expectedRowVersion,
+        UserId confirmedByUserId,
+        DateTime confirmedAtUtc,
         CancellationToken cancellationToken = default);
 
     Task<bool> TryMarkCancelledAsync(
         DistributorId distributorId,
         OrderId id,
         OrderStatus expectedStatus,
+        long expectedRowVersion,
+        UserId cancelledByUserId,
+        DateTime cancelledAtUtc,
+        string cancellationReason,
         CancellationToken cancellationToken = default);
 
     Task AddAsync(

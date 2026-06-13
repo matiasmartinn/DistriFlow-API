@@ -52,14 +52,14 @@ public sealed class OrderRepository
             query = query.Where(order => order.SalesRepId == salesRepId.Value);
 
         if (dateFrom.HasValue)
-            query = query.Where(order => order.StartedAtUtc >= dateFrom.Value);
+            query = query.Where(order => order.CreatedAtUtc >= dateFrom.Value);
 
         if (dateTo.HasValue)
-            query = query.Where(order => order.StartedAtUtc <= dateTo.Value);
+            query = query.Where(order => order.CreatedAtUtc <= dateTo.Value);
 
         var totalCount = await query.CountAsync(cancellationToken);
         var items = await query
-            .OrderByDescending(order => order.StartedAtUtc)
+            .OrderByDescending(order => order.CreatedAtUtc)
             .Include(order => order.OrderLines)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -71,16 +71,30 @@ public sealed class OrderRepository
     public async Task<bool> TryMarkConfirmedAsync(
         DistributorId distributorId,
         OrderId id,
+        long expectedRowVersion,
+        UserId confirmedByUserId,
+        DateTime confirmedAtUtc,
         CancellationToken cancellationToken = default)
     {
         var affectedRows = await DbSet
             .Where(order => order.DistributorId == distributorId
                 && order.Id == id
-                && order.Status == OrderStatus.Draft)
+                && order.Status == OrderStatus.Draft
+                && order.RowVersion == expectedRowVersion)
             .ExecuteUpdateAsync(
-                setters => setters.SetProperty(
-                    order => order.Status,
-                    OrderStatus.Confirmed),
+                setters => setters
+                    .SetProperty(
+                        order => order.Status,
+                        OrderStatus.Confirmed)
+                    .SetProperty(
+                        order => order.ConfirmedAtUtc,
+                        confirmedAtUtc)
+                    .SetProperty(
+                        order => order.ConfirmedByUserId,
+                        confirmedByUserId)
+                    .SetProperty(
+                        order => order.RowVersion,
+                        order => order.RowVersion + 1),
                 cancellationToken);
 
         return affectedRows == 1;
@@ -90,16 +104,34 @@ public sealed class OrderRepository
         DistributorId distributorId,
         OrderId id,
         OrderStatus expectedStatus,
+        long expectedRowVersion,
+        UserId cancelledByUserId,
+        DateTime cancelledAtUtc,
+        string cancellationReason,
         CancellationToken cancellationToken = default)
     {
         var affectedRows = await DbSet
             .Where(order => order.DistributorId == distributorId
                 && order.Id == id
-                && order.Status == expectedStatus)
+                && order.Status == expectedStatus
+                && order.RowVersion == expectedRowVersion)
             .ExecuteUpdateAsync(
-                setters => setters.SetProperty(
-                    order => order.Status,
-                    OrderStatus.Cancelled),
+                setters => setters
+                    .SetProperty(
+                        order => order.Status,
+                        OrderStatus.Cancelled)
+                    .SetProperty(
+                        order => order.CancelledAtUtc,
+                        cancelledAtUtc)
+                    .SetProperty(
+                        order => order.CancelledByUserId,
+                        cancelledByUserId)
+                    .SetProperty(
+                        order => order.CancellationReason,
+                        cancellationReason)
+                    .SetProperty(
+                        order => order.RowVersion,
+                        order => order.RowVersion + 1),
                 cancellationToken);
 
         return affectedRows == 1;

@@ -7,7 +7,11 @@ public sealed record OrderListItemDto(
     string CustomerName,
     Guid SalesRepId,
     string SalesRepName,
-    DateTime StartedAtUtc,
+    DateTime CreatedAtUtc,
+    string Origin,
+    DateTime? ConfirmedAtUtc,
+    DateTime? CancelledAtUtc,
+    long RowVersion,
     string Status,
     decimal Total,
     int LineCount);

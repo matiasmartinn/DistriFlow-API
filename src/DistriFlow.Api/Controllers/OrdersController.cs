@@ -82,12 +82,14 @@ public sealed class OrdersController : BaseController
     public async Task<IActionResult> RemoveLine(
         [FromRoute] Guid id,
         [FromRoute] Guid productId,
+        [FromQuery] long rowVersion,
         CancellationToken cancellationToken)
     {
         return HandleResult(
             await _commandService.RemoveLineAsync(
                 id,
                 productId,
+                rowVersion,
                 cancellationToken));
     }
 
@@ -95,19 +97,21 @@ public sealed class OrdersController : BaseController
     [Authorize(Roles = "SalesRep")]
     public async Task<IActionResult> Confirm(
         [FromRoute] Guid id,
+        [FromBody] ConfirmOrderRequest request,
         CancellationToken cancellationToken)
     {
         return HandleResult(
-            await _commandService.ConfirmAsync(id, cancellationToken));
+            await _commandService.ConfirmAsync(id, request, cancellationToken));
     }
 
     [HttpPatch("{id:guid}/cancel")]
     [Authorize(Roles = "SalesRep")]
     public async Task<IActionResult> Cancel(
         [FromRoute] Guid id,
+        [FromBody] CancelOrderRequest request,
         CancellationToken cancellationToken)
     {
         return HandleResult(
-            await _commandService.CancelAsync(id, cancellationToken));
+            await _commandService.CancelAsync(id, request, cancellationToken));
     }
 }

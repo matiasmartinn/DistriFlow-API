@@ -60,6 +60,9 @@ public sealed class OrderCommandService : IOrderCommandService
             if (_currentUserContext.Role != Role.SalesRep)
                 return SalesRepRequired();
 
+            if (!TryParseOrigin(request.Origin, out var origin))
+                return InvalidOrderOrigin();
+
             var availabilityError = await GetOrderingAvailabilityErrorAsync(
                 request.CustomerId,
                 cancellationToken);
@@ -86,6 +89,7 @@ public sealed class OrderCommandService : IOrderCommandService
                 CustomerId.From(request.CustomerId),
                 _currentUserContext.UserId,
                 orderNumber.Value,
+                origin,
                 DateTime.UtcNow);
 
             await _orderRepository.AddAsync(order, cancellationToken);
@@ -137,10 +141,15 @@ public sealed class OrderCommandService : IOrderCommandService
                 product.Id,
                 product.Name,
                 Quantity.Create(request.Amount, product.SaleUnit),
-                unitPrice.Data!);
+                unitPrice.Data!,
+                request.RowVersion);
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return orderResult.Data.ToDto();
+        }
+        catch (ConcurrencyException)
+        {
+            return OrderConcurrencyConflict();
         }
         catch (DomainException exception)
         {
@@ -169,10 +178,15 @@ public sealed class OrderCommandService : IOrderCommandService
 
             orderResult.Data.ChangeLineQuantity(
                 parsedProductId,
-                Quantity.Create(request.Amount, line.Quantity.Unit));
+                Quantity.Create(request.Amount, line.Quantity.Unit),
+                request.RowVersion);
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return orderResult.Data.ToDto();
+        }
+        catch (ConcurrencyException)
+        {
+            return OrderConcurrencyConflict();
         }
         catch (DomainException exception)
         {
@@ -183,6 +197,7 @@ public sealed class OrderCommandService : IOrderCommandService
     public async Task<Result<OrderDto>> RemoveLineAsync(
         Guid orderId,
         Guid productId,
+        long rowVersion,
         CancellationToken cancellationToken = default)
     {
         try
@@ -197,10 +212,14 @@ public sealed class OrderCommandService : IOrderCommandService
             if (orderResult.Data!.FindLine(parsedProductId) is null)
                 return OrderLineNotFound();
 
-            orderResult.Data.RemoveLine(parsedProductId);
+            orderResult.Data.RemoveLine(parsedProductId, rowVersion);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return orderResult.Data.ToDto();
+        }
+        catch (ConcurrencyException)
+        {
+            return OrderConcurrencyConflict();
         }
         catch (DomainException exception)
         {
@@ -210,6 +229,7 @@ public sealed class OrderCommandService : IOrderCommandService
 
     public async Task<Result<OrderDto>> ConfirmAsync(
         Guid orderId,
+        ConfirmOrderRequest request,
         CancellationToken cancellationToken = default)
     {
         await using var transaction = await _unitOfWork.BeginTransactionAsync(
@@ -226,7 +246,11 @@ public sealed class OrderCommandService : IOrderCommandService
             }
 
             var order = orderResult.Data!;
-            order.Confirm();
+            var confirmedAtUtc = DateTime.UtcNow;
+            order.Confirm(
+                _currentUserContext.UserId,
+                confirmedAtUtc,
+                request.RowVersion);
 
             var configuration = await _configurationRepository.GetByDistributorIdAsync(
                 _currentUserContext.DistributorId,
@@ -261,6 +285,9 @@ public sealed class OrderCommandService : IOrderCommandService
             var markedConfirmed = await _orderRepository.TryMarkConfirmedAsync(
                 _currentUserContext.DistributorId,
                 order.Id,
+                request.RowVersion,
+                _currentUserContext.UserId,
+                confirmedAtUtc,
                 cancellationToken);
 
             if (!markedConfirmed)
@@ -272,6 +299,11 @@ public sealed class OrderCommandService : IOrderCommandService
             await transaction.CommitAsync(cancellationToken);
             return order.ToDto();
         }
+        catch (ConcurrencyException)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return OrderConcurrencyConflict();
+        }
         catch (DomainException exception)
         {
             await transaction.RollbackAsync(cancellationToken);
@@ -281,6 +313,7 @@ public sealed class OrderCommandService : IOrderCommandService
 
     public async Task<Result<OrderDto>> CancelAsync(
         Guid orderId,
+        CancelOrderRequest request,
         CancellationToken cancellationToken = default)
     {
         await using var transaction = await _unitOfWork.BeginTransactionAsync(
@@ -301,7 +334,12 @@ public sealed class OrderCommandService : IOrderCommandService
             }
 
             var previousStatus = order.Status;
-            order.Cancel();
+            var cancelledAtUtc = DateTime.UtcNow;
+            order.Cancel(
+                _currentUserContext.UserId,
+                cancelledAtUtc,
+                request.CancellationReason,
+                request.RowVersion);
 
             if (previousStatus == OrderStatus.Confirmed)
             {
@@ -326,6 +364,10 @@ public sealed class OrderCommandService : IOrderCommandService
                 _currentUserContext.DistributorId,
                 order.Id,
                 previousStatus,
+                request.RowVersion,
+                _currentUserContext.UserId,
+                cancelledAtUtc,
+                order.CancellationReason!,
                 cancellationToken);
 
             if (!markedCancelled)
@@ -336,6 +378,11 @@ public sealed class OrderCommandService : IOrderCommandService
 
             await transaction.CommitAsync(cancellationToken);
             return order.ToDto();
+        }
+        catch (ConcurrencyException)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return OrderConcurrencyConflict();
         }
         catch (DomainException exception)
         {
@@ -427,6 +474,12 @@ public sealed class OrderCommandService : IOrderCommandService
             : PriceNotAvailable(product.Name);
     }
 
+    private static bool TryParseOrigin(string value, out OrderOrigin origin)
+    {
+        return Enum.TryParse(value, true, out origin)
+            && Enum.IsDefined(origin);
+    }
+
     private static Error OrderNotFound()
     {
         return Error.NotFound("order.not_found", "Pedido no encontrado.");
@@ -489,6 +542,20 @@ public sealed class OrderCommandService : IOrderCommandService
         return Error.Conflict(
             "order.confirmation_conflict",
             "El pedido ya no se encuentra disponible para confirmar.");
+    }
+
+    private static Error OrderConcurrencyConflict()
+    {
+        return Error.Conflict(
+            "order.concurrency_conflict",
+            "El pedido fue modificado por otra operacion. Actualiza los datos e intenta nuevamente.");
+    }
+
+    private static Error InvalidOrderOrigin()
+    {
+        return Error.Validation(
+            "order.invalid_origin",
+            "El origen del pedido es invalido.");
     }
 
     private static Error StockNotFound(string productDescription)

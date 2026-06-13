@@ -44,8 +44,45 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(order => order.OrderNumber)
             .IsRequired();
 
-        builder.Property(order => order.StartedAtUtc)
+        builder.Property(order => order.CreatedAtUtc)
             .IsRequired();
+
+        builder.Property(order => order.CreatedByUserId)
+            .IsRequired()
+            .HasConversion(
+                id => id.Value,
+                value => UserId.From(value));
+
+        builder.Property(order => order.Origin)
+            .IsRequired()
+            .HasConversion<string>()
+            .HasMaxLength(30);
+
+        builder.Property(order => order.ConfirmedAtUtc)
+            .IsRequired(false);
+
+        builder.Property(order => order.ConfirmedByUserId)
+            .IsRequired(false)
+            .HasConversion(
+                id => id!.Value.Value,
+                value => UserId.From(value));
+
+        builder.Property(order => order.CancelledAtUtc)
+            .IsRequired(false);
+
+        builder.Property(order => order.CancelledByUserId)
+            .IsRequired(false)
+            .HasConversion(
+                id => id!.Value.Value,
+                value => UserId.From(value));
+
+        builder.Property(order => order.CancellationReason)
+            .IsRequired(false)
+            .HasMaxLength(500);
+
+        builder.Property(order => order.RowVersion)
+            .IsRequired()
+            .IsConcurrencyToken();
 
         builder.Property(order => order.Status)
             .IsRequired()

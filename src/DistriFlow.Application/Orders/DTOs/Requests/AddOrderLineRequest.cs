@@ -8,4 +8,6 @@ public sealed record AddOrderLineRequest
     public Guid ProductId { get; init; }
 
     public decimal Amount { get; init; }
+
+    public long RowVersion { get; init; }
 }
