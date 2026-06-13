@@ -1,5 +1,6 @@
 using DistriFlow.Domain.Common;
 using DistriFlow.Domain.Customers;
+using DistriFlow.Domain.DistributorConfigurations;
 using DistriFlow.Domain.Distributors;
 using DistriFlow.Domain.Orders;
 using DistriFlow.Domain.PriceLists;
@@ -32,6 +33,9 @@ public static class DependencyInjection
             provider => provider.GetRequiredService<DistriFlowDbContext>());
 
         services.AddScoped<ICustomerRepository, CustomerRepository>();
+        services.AddScoped<
+            IDistributorConfigurationRepository,
+            DistributorConfigurationRepository>();
         services.AddScoped<IDistributorRepository, DistributorRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddScoped<IPriceListRepository, PriceListRepository>();

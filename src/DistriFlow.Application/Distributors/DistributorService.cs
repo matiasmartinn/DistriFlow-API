@@ -6,6 +6,7 @@ using DistriFlow.Application.Distributors.Mappers;
 using DistriFlow.Domain.Common;
 using DistriFlow.Domain.Common.Errors;
 using DistriFlow.Domain.Common.ValueObjects;
+using DistriFlow.Domain.DistributorConfigurations;
 using DistriFlow.Domain.Distributors;
 using DistriFlow.Domain.Users;
 
@@ -14,6 +15,7 @@ namespace DistriFlow.Application.Distributors;
 public sealed class DistributorService : IDistributorService
 {
     private readonly IDistributorRepository _distributorRepository;
+    private readonly IDistributorConfigurationRepository _configurationRepository;
     private readonly IUserRepository _userRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPasswordHasher _passwordHasher;
@@ -21,12 +23,14 @@ public sealed class DistributorService : IDistributorService
 
     public DistributorService(
         IDistributorRepository distributorRepository,
+        IDistributorConfigurationRepository configurationRepository,
         IUserRepository userRepository,
         IUnitOfWork unitOfWork,
         IPasswordHasher passwordHasher,
         ICurrentUserContext currentUserContext)
     {
         _distributorRepository = distributorRepository;
+        _configurationRepository = configurationRepository;
         _userRepository = userRepository;
         _unitOfWork = unitOfWork;
         _passwordHasher = passwordHasher;
@@ -80,6 +84,10 @@ public sealed class DistributorService : IDistributorService
                 PasswordHash.From(_passwordHasher.Hash(request.Administrator.Password)),
                 Role.Administrator);
 
+            var configuration = DistributorConfiguration.CreateDefault(
+                distributor.Id,
+                DateTime.UtcNow);
+
             if (await _userRepository.ExistsByEmailAsync(
                     administrator.Email,
                     cancellationToken))
@@ -90,6 +98,7 @@ public sealed class DistributorService : IDistributorService
             }
 
             await _distributorRepository.AddAsync(distributor, cancellationToken);
+            await _configurationRepository.AddAsync(configuration, cancellationToken);
             await _userRepository.AddAsync(administrator, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 

@@ -2,6 +2,7 @@ namespace DistriFlow.Application.Orders.DTOs.Responses;
 
 public sealed record OrderListItemDto(
     Guid Id,
+    string OrderNumber,
     Guid CustomerId,
     string CustomerName,
     Guid SalesRepId,

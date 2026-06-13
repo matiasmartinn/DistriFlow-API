@@ -7,6 +7,7 @@ using DistriFlow.Domain.Common;
 using DistriFlow.Domain.Common.Errors;
 using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.Customers;
+using DistriFlow.Domain.DistributorConfigurations;
 using DistriFlow.Domain.Distributors;
 using DistriFlow.Domain.Orders;
 using DistriFlow.Domain.PriceLists;
@@ -23,6 +24,7 @@ public sealed class OrderCommandService : IOrderCommandService
     private readonly IProductRepository _productRepository;
     private readonly IPriceListRepository _priceListRepository;
     private readonly IDistributorRepository _distributorRepository;
+    private readonly IDistributorConfigurationRepository _configurationRepository;
     private readonly IStockRepository _stockRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserContext _currentUserContext;
@@ -33,6 +35,7 @@ public sealed class OrderCommandService : IOrderCommandService
         IProductRepository productRepository,
         IPriceListRepository priceListRepository,
         IDistributorRepository distributorRepository,
+        IDistributorConfigurationRepository configurationRepository,
         IStockRepository stockRepository,
         IUnitOfWork unitOfWork,
         ICurrentUserContext currentUserContext)
@@ -42,6 +45,7 @@ public sealed class OrderCommandService : IOrderCommandService
         _productRepository = productRepository;
         _priceListRepository = priceListRepository;
         _distributorRepository = distributorRepository;
+        _configurationRepository = configurationRepository;
         _stockRepository = stockRepository;
         _unitOfWork = unitOfWork;
         _currentUserContext = currentUserContext;
@@ -63,14 +67,30 @@ public sealed class OrderCommandService : IOrderCommandService
             if (availabilityError is not null)
                 return availabilityError;
 
+            await using var transaction = await _unitOfWork.BeginTransactionAsync(
+                cancellationToken);
+
+            var orderNumber = await _configurationRepository.ReserveNextOrderNumberAsync(
+                _currentUserContext.DistributorId,
+                DateTime.UtcNow,
+                cancellationToken);
+
+            if (orderNumber is null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return ConfigurationNotFound();
+            }
+
             var order = Order.Start(
                 _currentUserContext.DistributorId,
                 CustomerId.From(request.CustomerId),
                 _currentUserContext.UserId,
+                orderNumber.Value,
                 DateTime.UtcNow);
 
             await _orderRepository.AddAsync(order, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
 
             return order.ToDto();
         }
@@ -110,11 +130,14 @@ public sealed class OrderCommandService : IOrderCommandService
                 product,
                 cancellationToken);
 
+            if (unitPrice.IsFailure)
+                return unitPrice.Error;
+
             orderResult.Data.AddLine(
                 product.Id,
                 product.Name,
                 Quantity.Create(request.Amount, product.SaleUnit),
-                unitPrice);
+                unitPrice.Data!);
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             return orderResult.Data.ToDto();
@@ -205,6 +228,19 @@ public sealed class OrderCommandService : IOrderCommandService
             var order = orderResult.Data!;
             order.Confirm();
 
+            var configuration = await _configurationRepository.GetByDistributorIdAsync(
+                _currentUserContext.DistributorId,
+                cancellationToken);
+
+            if (configuration is null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return ConfigurationNotFound();
+            }
+
+            var allowNegative =
+                configuration.StockPolicy == StockPolicy.AllowNegativeStock;
+
             foreach (var line in order.OrderLines.OrderBy(
                          line => line.ProductId.Value))
             {
@@ -212,6 +248,7 @@ public sealed class OrderCommandService : IOrderCommandService
                     _currentUserContext.DistributorId,
                     line.ProductId,
                     line.Quantity,
+                    allowNegative,
                     cancellationToken);
 
                 if (!decreased)
@@ -360,20 +397,34 @@ public sealed class OrderCommandService : IOrderCommandService
                 "No se pueden tomar pedidos para un cliente inactivo.");
     }
 
-    private async Task<Money> ResolvePriceAsync(
+    private async Task<Result<Money>> ResolvePriceAsync(
         Customer customer,
         Product product,
         CancellationToken cancellationToken)
     {
-        if (!customer.PriceListId.HasValue)
-            return product.BasePrice;
+        if (customer.PriceListId.HasValue)
+        {
+            var priceList = await _priceListRepository.GetByIdAsync(
+                _currentUserContext.DistributorId,
+                customer.PriceListId.Value,
+                cancellationToken);
 
-        var priceList = await _priceListRepository.GetByIdAsync(
+            var price = priceList?.FindPrice(product.Id);
+
+            if (price.HasValue)
+                return price.Value;
+        }
+
+        var configuration = await _configurationRepository.GetByDistributorIdAsync(
             _currentUserContext.DistributorId,
-            customer.PriceListId.Value,
             cancellationToken);
 
-        return priceList?.FindPrice(product.Id) ?? product.BasePrice;
+        if (configuration is null)
+            return ConfigurationNotFound();
+
+        return configuration.PriceFallbackPolicy == PriceFallbackPolicy.UseLastValidPrice
+            ? product.BasePrice
+            : PriceNotAvailable(product.Name);
     }
 
     private static Error OrderNotFound()
@@ -410,6 +461,20 @@ public sealed class OrderCommandService : IOrderCommandService
         return Error.NotFound(
             "distributor.not_found",
             "Distribuidora no encontrada.");
+    }
+
+    private static Error ConfigurationNotFound()
+    {
+        return Error.NotFound(
+            "distributor_configuration.not_found",
+            "Configuración de distribuidora no encontrada.");
+    }
+
+    private static Error PriceNotAvailable(string productName)
+    {
+        return Error.Domain(
+            "order.price_not_available",
+            $"No existe un precio válido para {productName}.");
     }
 
     private static Error InsufficientStock(string productDescription)

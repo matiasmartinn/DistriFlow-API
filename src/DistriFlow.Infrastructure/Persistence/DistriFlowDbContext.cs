@@ -1,5 +1,6 @@
 using DistriFlow.Domain.Common;
 using DistriFlow.Domain.Customers;
+using DistriFlow.Domain.DistributorConfigurations;
 using DistriFlow.Domain.Distributors;
 using DistriFlow.Domain.Orders;
 using DistriFlow.Domain.PriceLists;
@@ -16,6 +17,8 @@ public sealed class DistriFlowDbContext : DbContext, IUnitOfWork
         : base(options) { }
 
     public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<DistributorConfiguration> DistributorConfigurations =>
+        Set<DistributorConfiguration>();
     public DbSet<Distributor> Distributors => Set<Distributor>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<PriceList> PriceLists => Set<PriceList>();

@@ -20,6 +20,7 @@ public interface IStockRepository
         DistributorId distributorId,
         ProductId productId,
         Quantity quantity,
+        bool allowNegative,
         CancellationToken cancellationToken = default);
 
     Task<bool> TryIncreaseAsync(

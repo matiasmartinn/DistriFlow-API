@@ -15,6 +15,7 @@ public sealed class Order
     public DistributorId DistributorId { get; private set; }
     public CustomerId CustomerId { get; private set; }
     public UserId SalesRepId { get; private set; }
+    public string OrderNumber { get; private set; } = null!;
     public DateTime StartedAtUtc { get; private set; }
     public OrderStatus Status { get; private set; }
     public IReadOnlyCollection<OrderLine> OrderLines => _orderLines.AsReadOnly();
@@ -27,12 +28,14 @@ public sealed class Order
         DistributorId distributorId,
         CustomerId customerId,
         UserId salesRepId,
+        string orderNumber,
         DateTime startedAtUtc)
     {
         Id = id;
         DistributorId = distributorId;
         CustomerId = customerId;
         SalesRepId = salesRepId;
+        OrderNumber = orderNumber;
         StartedAtUtc = startedAtUtc;
         Status = OrderStatus.Draft;
     }
@@ -41,6 +44,7 @@ public sealed class Order
         DistributorId distributorId,
         CustomerId customerId,
         UserId salesRepId,
+        string orderNumber,
         DateTime startedAtUtc)
     {
         if (distributorId.Value == Guid.Empty)
@@ -52,6 +56,9 @@ public sealed class Order
         if (salesRepId.Value == Guid.Empty)
             throw new DomainException("El preventista del pedido es requerido.");
 
+        if (string.IsNullOrWhiteSpace(orderNumber))
+            throw new DomainException("El número del pedido es requerido.");
+
         if (startedAtUtc.Kind != DateTimeKind.Utc)
             throw new DomainException("La fecha del pedido debe estar expresada en UTC.");
 
@@ -60,6 +67,7 @@ public sealed class Order
             distributorId,
             customerId,
             salesRepId,
+            orderNumber.Trim(),
             startedAtUtc);
     }
 

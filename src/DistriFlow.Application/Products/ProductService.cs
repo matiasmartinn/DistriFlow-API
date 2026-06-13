@@ -50,7 +50,13 @@ public sealed class ProductService : IProductService
                 SaleUnit.Create(request.SaleUnit),
                 Money.Create(request.BasePrice));
 
+            var stock = Stock.Create(
+                _currentUserContext.DistributorId,
+                product.Id,
+                product.SaleUnit);
+
             await _productRepository.AddAsync(product, cancellationToken);
+            await _stockRepository.AddAsync(stock, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return product.ToDto();

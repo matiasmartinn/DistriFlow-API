@@ -7,6 +7,7 @@ using DistriFlow.Domain.Common;
 using DistriFlow.Domain.Common.Errors;
 using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.Customers;
+using DistriFlow.Domain.DistributorConfigurations;
 using DistriFlow.Domain.PriceLists;
 using DistriFlow.Domain.Products;
 
@@ -17,6 +18,7 @@ public sealed class CustomerService : ICustomerService
     private readonly ICustomerRepository _customerRepository;
     private readonly IPriceListRepository _priceListRepository;
     private readonly IProductRepository _productRepository;
+    private readonly IDistributorConfigurationRepository _configurationRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserContext _currentUserContext;
 
@@ -24,12 +26,14 @@ public sealed class CustomerService : ICustomerService
         ICustomerRepository customerRepository,
         IPriceListRepository priceListRepository,
         IProductRepository productRepository,
+        IDistributorConfigurationRepository configurationRepository,
         IUnitOfWork unitOfWork,
         ICurrentUserContext currentUserContext)
     {
         _customerRepository = customerRepository;
         _priceListRepository = priceListRepository;
         _productRepository = productRepository;
+        _configurationRepository = configurationRepository;
         _unitOfWork = unitOfWork;
         _currentUserContext = currentUserContext;
     }
@@ -174,7 +178,10 @@ public sealed class CustomerService : ICustomerService
                 return ProductNotFound();
 
             if (!customer.PriceListId.HasValue)
-                return BasePrice(customer, product);
+                return await ResolveFallbackPriceAsync(
+                    customer,
+                    product,
+                    cancellationToken);
 
             var priceList = await _priceListRepository.GetByIdAsync(
                 _currentUserContext.DistributorId,
@@ -182,7 +189,10 @@ public sealed class CustomerService : ICustomerService
                 cancellationToken);
 
             if (priceList is null)
-                return BasePrice(customer, product);
+                return await ResolveFallbackPriceAsync(
+                    customer,
+                    product,
+                    cancellationToken);
 
             var price = priceList.FindPrice(product.Id);
 
@@ -193,7 +203,10 @@ public sealed class CustomerService : ICustomerService
                     price.Value.Amount,
                     "PriceList",
                     priceList.Id.Value)
-                : BasePrice(customer, product);
+                : await ResolveFallbackPriceAsync(
+                    customer,
+                    product,
+                    cancellationToken);
         }
         catch (DomainException exception)
         {
@@ -259,13 +272,34 @@ public sealed class CustomerService : ICustomerService
             : Address.Create(request.Street, request.CityId, request.ZipCode);
     }
 
-    private static EffectivePriceDto BasePrice(Customer customer, Product product)
+    private async Task<Result<EffectivePriceDto>> ResolveFallbackPriceAsync(
+        Customer customer,
+        Product product,
+        CancellationToken cancellationToken)
     {
+        var configuration = await _configurationRepository.GetByDistributorIdAsync(
+            _currentUserContext.DistributorId,
+            cancellationToken);
+
+        if (configuration is null)
+        {
+            return Error.NotFound(
+                "distributor_configuration.not_found",
+                "Configuración de distribuidora no encontrada.");
+        }
+
+        if (configuration.PriceFallbackPolicy == PriceFallbackPolicy.RejectOrder)
+        {
+            return Error.Domain(
+                "customer.price_not_available",
+                "No existe un precio válido para el producto.");
+        }
+
         return new EffectivePriceDto(
             customer.Id.Value,
             product.Id.Value,
             product.BasePrice.Amount,
-            "BasePrice",
+            "LastValidPrice",
             null);
     }
 

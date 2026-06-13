@@ -41,6 +41,9 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
                 id => id.Value,
                 value => UserId.From(value));
 
+        builder.Property(order => order.OrderNumber)
+            .IsRequired();
+
         builder.Property(order => order.StartedAtUtc)
             .IsRequired();
 
@@ -52,6 +55,9 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Ignore(order => order.Total);
 
         builder.HasIndex(order => order.DistributorId);
+        builder.HasIndex(order => new { order.DistributorId, order.OrderNumber })
+            .IsUnique()
+            .HasDatabaseName("ix_orders_distributor_id_order_number");
         builder.HasIndex(order => new { order.DistributorId, order.CustomerId });
         builder.HasIndex(order => new { order.DistributorId, order.SalesRepId });
 

@@ -9,6 +9,7 @@ public static class OrderMapper
     {
         return new OrderDto(
             order.Id.Value,
+            order.OrderNumber,
             order.CustomerId.Value,
             order.SalesRepId.Value,
             order.StartedAtUtc,
@@ -24,6 +25,7 @@ public static class OrderMapper
     {
         return new OrderDetailDto(
             order.Id.Value,
+            order.OrderNumber,
             order.CustomerId.Value,
             customerName,
             order.SalesRepId.Value,
@@ -41,6 +43,7 @@ public static class OrderMapper
     {
         return new OrderListItemDto(
             order.Id.Value,
+            order.OrderNumber,
             order.CustomerId.Value,
             customerName,
             order.SalesRepId.Value,

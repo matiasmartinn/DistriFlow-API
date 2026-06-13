@@ -60,6 +60,52 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
                     b.ToTable("customers", (string)null);
                 });
 
+            modelBuilder.Entity("DistriFlow.Domain.DistributorConfigurations.DistributorConfiguration", b =>
+                {
+                    b.Property<Guid>("DistributorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("distributor_id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<long>("NextOrderNumber")
+                        .HasColumnType("bigint")
+                        .HasColumnName("next_order_number");
+
+                    b.Property<string>("OrderNumberPrefix")
+                        .HasColumnType("text")
+                        .HasColumnName("order_number_prefix");
+
+                    b.Property<string>("PriceFallbackPolicy")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("price_fallback_policy");
+
+                    b.Property<string>("StockPolicy")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("stock_policy");
+
+                    b.Property<string>("TimeZone")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("time_zone");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("DistributorId")
+                        .HasName("pk_distributor_configurations");
+
+                    b.ToTable("distributor_configurations", (string)null);
+                });
+
             modelBuilder.Entity("DistriFlow.Domain.Distributors.Distributor", b =>
                 {
                     b.Property<Guid>("Id")
@@ -102,6 +148,11 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("distributor_id");
 
+                    b.Property<string>("OrderNumber")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("order_number");
+
                     b.Property<Guid>("SalesRepId")
                         .HasColumnType("uuid")
                         .HasColumnName("sales_rep_id");
@@ -124,6 +175,10 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("DistributorId", "CustomerId")
                         .HasDatabaseName("ix_orders_distributor_id_customer_id");
+
+                    b.HasIndex("DistributorId", "OrderNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_orders_distributor_id_order_number");
 
                     b.HasIndex("DistributorId", "SalesRepId")
                         .HasDatabaseName("ix_orders_distributor_id_sales_rep_id");

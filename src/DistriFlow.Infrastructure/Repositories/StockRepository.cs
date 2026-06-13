@@ -41,14 +41,19 @@ public sealed class StockRepository
         DistributorId distributorId,
         ProductId productId,
         Quantity quantity,
+        bool allowNegative,
         CancellationToken cancellationToken = default)
     {
-        var affectedRows = await DbSet
+        var query = DbSet
             .Where(stock => stock.DistributorId == distributorId
                 && stock.ProductId == productId
                 && stock.Available.Unit == quantity.Unit
-                && quantity.Amount > 0
-                && stock.Available.Amount >= quantity.Amount)
+                && quantity.Amount > 0);
+
+        if (!allowNegative)
+            query = query.Where(stock => stock.Available.Amount >= quantity.Amount);
+
+        var affectedRows = await query
             .ExecuteUpdateAsync(
                 setters => setters.SetProperty(
                     stock => stock.Available.Amount,

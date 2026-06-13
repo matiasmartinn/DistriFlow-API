@@ -1,6 +1,7 @@
 using DistriFlow.Application.Auth;
 using DistriFlow.Application.Customers;
 using DistriFlow.Application.Distributors;
+using DistriFlow.Application.DistributorConfigurations;
 using DistriFlow.Application.Orders.Commands;
 using DistriFlow.Application.Orders.Queries;
 using DistriFlow.Application.PriceLists;
@@ -17,6 +18,9 @@ public static class DependencyInjection
     {
         services.AddScoped<ICustomerService, CustomerService>();
         services.AddScoped<IDistributorService, DistributorService>();
+        services.AddScoped<
+            IDistributorConfigurationService,
+            DistributorConfigurationService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IOrderCommandService, OrderCommandService>();
         services.AddScoped<IOrderQueryService, OrderQueryService>();
