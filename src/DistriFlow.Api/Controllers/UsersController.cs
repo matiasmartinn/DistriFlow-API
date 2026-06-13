@@ -55,4 +55,13 @@ public sealed class UsersController : BaseController
         return HandleResult(
             await _service.DeactivateAsync(id, cancellationToken));
     }
+
+    [HttpPatch("{id:guid}/reactivate")]
+    public async Task<IActionResult> Reactivate(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken)
+    {
+        return HandleResult(
+            await _service.ReactivateAsync(id, cancellationToken));
+    }
 }

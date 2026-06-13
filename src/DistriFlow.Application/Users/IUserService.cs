@@ -23,4 +23,8 @@ public interface IUserService
     Task<Result> DeactivateAsync(
         Guid id,
         CancellationToken cancellationToken = default);
+
+    Task<Result> ReactivateAsync(
+        Guid id,
+        CancellationToken cancellationToken = default);
 }

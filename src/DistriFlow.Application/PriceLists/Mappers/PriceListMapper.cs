@@ -10,6 +10,7 @@ internal static class PriceListMapper
         return new PriceListDto(
             priceList.Id.Value,
             priceList.Name,
+            priceList.Status.ToString(),
             priceList.ProductPrices
                 .Select(productPrice => new ProductPriceDto(
                     productPrice.ProductId.Value,

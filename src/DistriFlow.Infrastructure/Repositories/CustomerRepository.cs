@@ -32,6 +32,16 @@ public sealed class CustomerRepository
             cancellationToken);
     }
 
+    public Task<IReadOnlyList<Customer>> GetActiveAsync(
+        DistributorId distributorId,
+        CancellationToken cancellationToken = default)
+    {
+        return ListAsync(
+            customer => customer.DistributorId == distributorId
+                && customer.Status == CustomerStatus.Active,
+            cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Customer>> GetByIdsAsync(
         DistributorId distributorId,
         IReadOnlyCollection<CustomerId> ids,

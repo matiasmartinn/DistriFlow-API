@@ -10,6 +10,7 @@ using DistriFlow.Domain.Customers;
 using DistriFlow.Domain.DistributorConfigurations;
 using DistriFlow.Domain.PriceLists;
 using DistriFlow.Domain.Products;
+using DistriFlow.Domain.Users;
 
 namespace DistriFlow.Application.Customers;
 
@@ -70,11 +71,17 @@ public sealed class CustomerService : ICustomerService
     }
 
     public async Task<Result<IReadOnlyList<CustomerDto>>> GetAllAsync(
+        bool includeInactive,
         CancellationToken cancellationToken = default)
     {
-        var customers = await _customerRepository.GetAllAsync(
-            _currentUserContext.DistributorId,
-            cancellationToken);
+        var customers = includeInactive
+            && _currentUserContext.Role == Role.Administrator
+                ? await _customerRepository.GetAllAsync(
+                    _currentUserContext.DistributorId,
+                    cancellationToken)
+                : await _customerRepository.GetActiveAsync(
+                    _currentUserContext.DistributorId,
+                    cancellationToken);
 
         return customers.Select(customer => customer.ToDto()).ToList();
     }
@@ -157,6 +164,16 @@ public sealed class CustomerService : ICustomerService
             cancellationToken);
     }
 
+    public Task<Result> ReactivateAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        return ChangeAsync(
+            id,
+            customer => customer.Reactivate(),
+            cancellationToken);
+    }
+
     public async Task<Result<EffectivePriceDto>> ResolvePriceAsync(
         Guid id,
         Guid productId,
@@ -169,12 +186,15 @@ public sealed class CustomerService : ICustomerService
             if (customer is null)
                 return CustomerNotFound();
 
+            if (customer.Status != CustomerStatus.Active)
+                return CustomerInactive();
+
             var product = await _productRepository.GetByIdAsync(
                 _currentUserContext.DistributorId,
                 ProductId.From(productId),
                 cancellationToken);
 
-            if (product is null)
+            if (product is null || product.Status != ProductStatus.Active)
                 return ProductNotFound();
 
             if (!customer.PriceListId.HasValue)
@@ -188,7 +208,7 @@ public sealed class CustomerService : ICustomerService
                 customer.PriceListId.Value,
                 cancellationToken);
 
-            if (priceList is null)
+            if (priceList is null || priceList.Status != PriceListStatus.Active)
                 return await ResolveFallbackPriceAsync(
                     customer,
                     product,
@@ -260,7 +280,7 @@ public sealed class CustomerService : ICustomerService
             priceListId,
             cancellationToken);
 
-        return priceList is null
+        return priceList is null || priceList.Status != PriceListStatus.Active
             ? Result<PriceListId?>.Failure(PriceListNotFound())
             : Result<PriceListId?>.Success(priceListId);
     }
@@ -306,6 +326,13 @@ public sealed class CustomerService : ICustomerService
     private static Error CustomerNotFound()
     {
         return Error.NotFound("customer.not_found", "Cliente no encontrado.");
+    }
+
+    private static Error CustomerInactive()
+    {
+        return Error.Domain(
+            "customer.inactive",
+            "El cliente se encuentra inactivo.");
     }
 
     private static Error PriceListNotFound()

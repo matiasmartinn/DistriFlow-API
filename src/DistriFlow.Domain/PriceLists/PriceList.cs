@@ -12,6 +12,7 @@ public sealed class PriceList
     public PriceListId Id { get; private set; }
     public DistributorId DistributorId { get; private set; }
     public string Name { get; private set; } = null!;
+    public PriceListStatus Status { get; private set; }
     public IReadOnlyCollection<ProductPrice> ProductPrices => _productPrices.AsReadOnly();
 
     private PriceList() { }
@@ -24,6 +25,7 @@ public sealed class PriceList
         Id = id;
         DistributorId = distributorId;
         Name = name;
+        Status = PriceListStatus.Active;
     }
 
     public static PriceList Create(DistributorId distributorId, string name)
@@ -39,11 +41,13 @@ public sealed class PriceList
 
     public void Rename(string name)
     {
+        EnsureActive();
         Name = NormalizeName(name);
     }
 
     public void SetPrice(ProductId productId, Money price)
     {
+        EnsureActive();
         EnsureProductId(productId);
 
         var productPrice = _productPrices.FirstOrDefault(x => x.ProductId == productId);
@@ -59,6 +63,7 @@ public sealed class PriceList
 
     public void RemoveProduct(ProductId productId)
     {
+        EnsureActive();
         EnsureProductId(productId);
 
         var productPrice = _productPrices.FirstOrDefault(x => x.ProductId == productId);
@@ -71,6 +76,28 @@ public sealed class PriceList
     {
         EnsureProductId(productId);
         return _productPrices.FirstOrDefault(x => x.ProductId == productId)?.Price;
+    }
+
+    public void Deactivate()
+    {
+        if (Status == PriceListStatus.Inactive)
+            throw new DomainException("La lista de precios ya se encuentra inactiva.");
+
+        Status = PriceListStatus.Inactive;
+    }
+
+    public void Reactivate()
+    {
+        if (Status == PriceListStatus.Active)
+            throw new DomainException("La lista de precios ya se encuentra activa.");
+
+        Status = PriceListStatus.Active;
+    }
+
+    private void EnsureActive()
+    {
+        if (Status != PriceListStatus.Active)
+            throw new DomainException("La lista de precios se encuentra inactiva.");
     }
 
     private static void EnsureProductId(ProductId productId)

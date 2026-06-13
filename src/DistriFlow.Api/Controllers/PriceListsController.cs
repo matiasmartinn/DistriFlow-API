@@ -29,9 +29,12 @@ public sealed class PriceListsController : BaseController
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAll(
+        [FromQuery] bool includeInactive,
+        CancellationToken cancellationToken)
     {
-        return HandleResult(await _service.GetAllAsync(cancellationToken));
+        return HandleResult(
+            await _service.GetAllAsync(includeInactive, cancellationToken));
     }
 
     [HttpGet("{id:guid}")]
@@ -75,5 +78,23 @@ public sealed class PriceListsController : BaseController
     {
         return HandleResult(
             await _service.RemoveProductAsync(id, productId, cancellationToken));
+    }
+
+    [HttpPatch("{id:guid}/deactivate")]
+    public async Task<IActionResult> Deactivate(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken)
+    {
+        return HandleResult(
+            await _service.DeactivateAsync(id, cancellationToken));
+    }
+
+    [HttpPatch("{id:guid}/reactivate")]
+    public async Task<IActionResult> Reactivate(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken)
+    {
+        return HandleResult(
+            await _service.ReactivateAsync(id, cancellationToken));
     }
 }

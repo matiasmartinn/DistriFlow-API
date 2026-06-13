@@ -35,4 +35,16 @@ public sealed class PriceListRepository
             .Where(priceList => priceList.DistributorId == distributorId)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IReadOnlyList<PriceList>> GetActiveAsync(
+        DistributorId distributorId,
+        CancellationToken cancellationToken = default)
+    {
+        return await DbSet
+            .AsNoTracking()
+            .Include(priceList => priceList.ProductPrices)
+            .Where(priceList => priceList.DistributorId == distributorId
+                && priceList.Status == PriceListStatus.Active)
+            .ToListAsync(cancellationToken);
+    }
 }

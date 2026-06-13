@@ -669,7 +669,9 @@ public sealed class OrderCommandService : IOrderCommandService
                 customer.PriceListId.Value,
                 cancellationToken);
 
-            var price = priceList?.FindPrice(product.Id);
+            var price = priceList?.Status == PriceListStatus.Active
+                ? priceList.FindPrice(product.Id)
+                : null;
 
             if (price.HasValue)
                 return price.Value;

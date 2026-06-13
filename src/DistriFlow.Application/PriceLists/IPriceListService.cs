@@ -11,6 +11,7 @@ public interface IPriceListService
         CancellationToken cancellationToken = default);
 
     Task<Result<IReadOnlyList<PriceListDto>>> GetAllAsync(
+        bool includeInactive,
         CancellationToken cancellationToken = default);
 
     Task<Result<PriceListDto>> GetByIdAsync(
@@ -31,5 +32,13 @@ public interface IPriceListService
     Task<Result> RemoveProductAsync(
         Guid id,
         Guid productId,
+        CancellationToken cancellationToken = default);
+
+    Task<Result> DeactivateAsync(
+        Guid id,
+        CancellationToken cancellationToken = default);
+
+    Task<Result> ReactivateAsync(
+        Guid id,
         CancellationToken cancellationToken = default);
 }

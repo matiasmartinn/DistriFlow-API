@@ -31,6 +31,11 @@ public sealed class PriceListConfiguration : IEntityTypeConfiguration<PriceList>
             .IsRequired()
             .HasMaxLength(200);
 
+        builder.Property(priceList => priceList.Status)
+            .IsRequired()
+            .HasConversion<string>()
+            .HasMaxLength(30);
+
         builder.HasIndex(priceList => priceList.DistributorId);
 
         builder.OwnsMany(priceList => priceList.ProductPrices, productPrices =>

@@ -282,6 +282,12 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("name");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status");
+
                     b.HasKey("Id")
                         .HasName("pk_price_lists");
 

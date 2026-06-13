@@ -13,6 +13,10 @@ public interface IPriceListRepository
         DistributorId distributorId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<PriceList>> GetActiveAsync(
+        DistributorId distributorId,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(
         PriceList priceList,
         CancellationToken cancellationToken = default);

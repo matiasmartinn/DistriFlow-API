@@ -70,13 +70,9 @@ public sealed class ProductService : IProductService
     public async Task<Result<IReadOnlyList<ProductDto>>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {
-        var products = _currentUserContext.Role == Role.SalesRep
-            ? await _productRepository.GetActiveAsync(
-                _currentUserContext.DistributorId,
-                cancellationToken)
-            : await _productRepository.GetAllAsync(
-                _currentUserContext.DistributorId,
-                cancellationToken);
+        var products = await _productRepository.GetActiveAsync(
+            _currentUserContext.DistributorId,
+            cancellationToken);
 
         return products.Select(product => product.ToDto()).ToList();
     }
@@ -101,7 +97,7 @@ public sealed class ProductService : IProductService
 
         var status = _currentUserContext.Role == Role.SalesRep
             ? ProductStatus.Active
-            : requestedStatus;
+            : requestedStatus ?? ProductStatus.Active;
 
         var (products, totalCount) = await _productRepository.GetPagedAsync(
             _currentUserContext.DistributorId,

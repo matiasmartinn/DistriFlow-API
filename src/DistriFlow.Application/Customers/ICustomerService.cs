@@ -11,6 +11,7 @@ public interface ICustomerService
         CancellationToken cancellationToken = default);
 
     Task<Result<IReadOnlyList<CustomerDto>>> GetAllAsync(
+        bool includeInactive,
         CancellationToken cancellationToken = default);
 
     Task<Result<CustomerDto>> GetByIdAsync(
@@ -32,6 +33,10 @@ public interface ICustomerService
         CancellationToken cancellationToken = default);
 
     Task<Result> DeactivateAsync(
+        Guid id,
+        CancellationToken cancellationToken = default);
+
+    Task<Result> ReactivateAsync(
         Guid id,
         CancellationToken cancellationToken = default);
 

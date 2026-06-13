@@ -57,11 +57,29 @@ public sealed class User
 
     public void ChangeRole(Role role)
     {
+        EnsureActive();
         Role = role;
     }
 
     public void Deactivate()
     {
+        if (Status == UserStatus.Inactive)
+            throw new DomainException("El usuario ya se encuentra inactivo.");
+
         Status = UserStatus.Inactive;
+    }
+
+    public void Reactivate()
+    {
+        if (Status == UserStatus.Active)
+            throw new DomainException("El usuario ya se encuentra activo.");
+
+        Status = UserStatus.Active;
+    }
+
+    private void EnsureActive()
+    {
+        if (Status != UserStatus.Active)
+            throw new DomainException("El usuario se encuentra inactivo.");
     }
 }

@@ -61,6 +61,8 @@ public sealed class Customer
 
     public void AssignPriceList(PriceListId priceListId)
     {
+        EnsureActive();
+
         if (priceListId.Value == Guid.Empty)
             throw new DomainException("La lista de precios del cliente es requerida.");
 
@@ -69,17 +71,36 @@ public sealed class Customer
 
     public void RemovePriceList()
     {
+        EnsureActive();
         PriceListId = null;
     }
 
     public void UpdateContact(ContactInfo contact, Address? address)
     {
+        EnsureActive();
         Contact = contact;
         Address = address;
     }
 
     public void Deactivate()
     {
+        if (Status == CustomerStatus.Inactive)
+            throw new DomainException("El cliente ya se encuentra inactivo.");
+
         Status = CustomerStatus.Inactive;
+    }
+
+    public void Reactivate()
+    {
+        if (Status == CustomerStatus.Active)
+            throw new DomainException("El cliente ya se encuentra activo.");
+
+        Status = CustomerStatus.Active;
+    }
+
+    private void EnsureActive()
+    {
+        if (Status != CustomerStatus.Active)
+            throw new DomainException("El cliente se encuentra inactivo.");
     }
 }

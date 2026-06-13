@@ -127,6 +127,17 @@ public sealed class UserService : IUserService
             cancellationToken);
     }
 
+    public Task<Result> ReactivateAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        return ChangeAsync(
+            id,
+            user => user.Reactivate(),
+            "user.invalid_status",
+            cancellationToken);
+    }
+
     private async Task<Result> ChangeAsync(
         Guid id,
         Action<User> change,

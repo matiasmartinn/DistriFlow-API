@@ -57,6 +57,7 @@ public sealed class Product
 
     public void ChangeBasePrice(Money basePrice)
     {
+        EnsureActive();
         BasePrice = basePrice;
     }
 
@@ -66,6 +67,8 @@ public sealed class Product
         SaleUnit saleUnit,
         Money basePrice)
     {
+        EnsureActive();
+
         if (string.IsNullOrWhiteSpace(name))
             throw new DomainException("El nombre del producto es requerido.");
 
@@ -82,11 +85,23 @@ public sealed class Product
 
     public void Discontinue()
     {
+        if (Status == ProductStatus.Discontinued)
+            throw new DomainException("El producto ya se encuentra discontinuado.");
+
         Status = ProductStatus.Discontinued;
     }
 
     public void Reactivate()
     {
+        if (Status == ProductStatus.Active)
+            throw new DomainException("El producto ya se encuentra activo.");
+
         Status = ProductStatus.Active;
+    }
+
+    private void EnsureActive()
+    {
+        if (Status != ProductStatus.Active)
+            throw new DomainException("El producto se encuentra discontinuado.");
     }
 }

@@ -52,11 +52,16 @@ public sealed class PriceListService : IPriceListService
     }
 
     public async Task<Result<IReadOnlyList<PriceListDto>>> GetAllAsync(
+        bool includeInactive,
         CancellationToken cancellationToken = default)
     {
-        var priceLists = await _priceListRepository.GetAllAsync(
-            _currentUserContext.DistributorId,
-            cancellationToken);
+        var priceLists = includeInactive
+            ? await _priceListRepository.GetAllAsync(
+                _currentUserContext.DistributorId,
+                cancellationToken)
+            : await _priceListRepository.GetActiveAsync(
+                _currentUserContext.DistributorId,
+                cancellationToken);
 
         return priceLists.Select(priceList => priceList.ToDto()).ToList();
     }
@@ -100,7 +105,7 @@ public sealed class PriceListService : IPriceListService
                 ProductId.From(productId),
                 cancellationToken);
 
-            if (product is null)
+            if (product is null || product.Status != ProductStatus.Active)
                 return ProductNotFound();
 
             var priceList = await GetPriceListAsync(id, cancellationToken);
@@ -131,7 +136,7 @@ public sealed class PriceListService : IPriceListService
                 ProductId.From(productId),
                 cancellationToken);
 
-            if (product is null)
+            if (product is null || product.Status != ProductStatus.Active)
                 return ProductNotFound();
 
             var priceList = await GetPriceListAsync(id, cancellationToken);
@@ -148,6 +153,26 @@ public sealed class PriceListService : IPriceListService
         {
             return Error.Domain("price_list.invalid_product", exception.Message);
         }
+    }
+
+    public Task<Result> DeactivateAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        return ChangeAsync(
+            id,
+            priceList => priceList.Deactivate(),
+            cancellationToken);
+    }
+
+    public Task<Result> ReactivateAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        return ChangeAsync(
+            id,
+            priceList => priceList.Reactivate(),
+            cancellationToken);
     }
 
     private async Task<Result> ChangeAsync(
