@@ -41,6 +41,18 @@ public sealed class ProductRepository
             cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Product>> GetByIdsAsync(
+        DistributorId distributorId,
+        IReadOnlyCollection<ProductId> ids,
+        CancellationToken cancellationToken = default)
+    {
+        return await DbSet
+            .AsNoTracking()
+            .Where(product => product.DistributorId == distributorId
+                && ids.Contains(product.Id))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<(IReadOnlyList<Product> Items, int TotalCount)> GetPagedAsync(
         DistributorId distributorId,
         ProductStatus? status,

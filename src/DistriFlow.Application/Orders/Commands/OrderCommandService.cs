@@ -314,6 +314,16 @@ public sealed class OrderCommandService : IOrderCommandService
             }
 
             var order = orderResult.Data!;
+            var productAvailabilityError = await GetProductAvailabilityErrorAsync(
+                order,
+                cancellationToken);
+
+            if (productAvailabilityError is not null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return productAvailabilityError;
+            }
+
             var confirmedAtUtc = DateTime.UtcNow;
             order.Confirm(
                 _currentUserContext.UserId,
@@ -506,6 +516,32 @@ public sealed class OrderCommandService : IOrderCommandService
         return availabilityError is null ? order : availabilityError;
     }
 
+    private async Task<Error?> GetProductAvailabilityErrorAsync(
+        Order order,
+        CancellationToken cancellationToken)
+    {
+        var productIds = order.OrderLines
+            .Select(line => line.ProductId)
+            .ToList();
+
+        var products = await _productRepository.GetByIdsAsync(
+            _currentUserContext.DistributorId,
+            productIds,
+            cancellationToken);
+
+        var activeProductIds = products
+            .Where(product => product.Status == ProductStatus.Active)
+            .Select(product => product.Id)
+            .ToHashSet();
+
+        var unavailableLine = order.OrderLines.FirstOrDefault(
+            line => !activeProductIds.Contains(line.ProductId));
+
+        return unavailableLine is null
+            ? null
+            : ProductUnavailable(unavailableLine.ProductDescription);
+    }
+
     private async Task<Result<IdempotencyContext>> ReserveIdempotencyAsync(
         string? idempotencyKey,
         IdempotentOperation operation,
@@ -657,6 +693,13 @@ public sealed class OrderCommandService : IOrderCommandService
     private static Error ProductNotFound()
     {
         return Error.NotFound("product.not_found", "Producto no encontrado.");
+    }
+
+    private static Error ProductUnavailable(string productDescription)
+    {
+        return Error.Domain(
+            "order.product_unavailable",
+            $"No se puede confirmar porque {productDescription} no se encuentra activo.");
     }
 
     private static Error DistributorNotFound()

@@ -17,6 +17,11 @@ public interface IProductRepository
         DistributorId distributorId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Product>> GetByIdsAsync(
+        DistributorId distributorId,
+        IReadOnlyCollection<ProductId> ids,
+        CancellationToken cancellationToken = default);
+
     Task<(IReadOnlyList<Product> Items, int TotalCount)> GetPagedAsync(
         DistributorId distributorId,
         ProductStatus? status,
