@@ -447,27 +447,39 @@ public sealed class OrderCommandService : IOrderCommandService
 
             if (previousStatus == OrderStatus.Confirmed)
             {
-                foreach (var line in order.OrderLines.OrderBy(
-                             line => line.ProductId.Value))
+                var exits = await _stockMovementRepository.GetByReferenceAsync(
+                    _currentUserContext.DistributorId,
+                    StockMovementReferenceType.Order,
+                    order.Id.Value,
+                    cancellationToken);
+
+                if (!HasExactConfirmationMovements(order, exits))
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    return StockReversalUnavailable();
+                }
+
+                foreach (var exit in exits)
                 {
                     var stockChange = await _stockRepository.TryIncreaseAsync(
                         _currentUserContext.DistributorId,
-                        line.ProductId,
-                        line.Quantity,
+                        exit.ProductId,
+                        Quantity.Create(exit.Quantity, exit.SaleUnit),
                         cancellationToken);
 
                     if (stockChange is null)
                     {
                         await transaction.RollbackAsync(cancellationToken);
-                        return StockNotFound(line.ProductDescription);
+                        return StockNotFound(
+                            order.FindLine(exit.ProductId)!.ProductDescription);
                     }
 
                     await _stockMovementRepository.AddAsync(
                         StockMovement.Create(
                             _currentUserContext.DistributorId,
-                            line.ProductId,
+                            exit.ProductId,
                             StockMovementType.OrderCancellationReversal,
-                            line.Quantity.Amount,
+                            exit.Quantity,
                             stockChange.PreviousQuantity,
                             stockChange.ResultingQuantity,
                             stockChange.SaleUnit,
@@ -540,6 +552,21 @@ public sealed class OrderCommandService : IOrderCommandService
         return unavailableLine is null
             ? null
             : ProductUnavailable(unavailableLine.ProductDescription);
+    }
+
+    private static bool HasExactConfirmationMovements(
+        Order order,
+        IReadOnlyList<StockMovement> exits)
+    {
+        if (exits.Count != order.OrderLines.Count)
+            return false;
+
+        return order.OrderLines.All(line =>
+            exits.Count(exit =>
+                exit.Type == StockMovementType.Exit
+                && exit.ProductId == line.ProductId
+                && exit.Quantity == line.Quantity.Amount
+                && exit.SaleUnit == line.Quantity.Unit) == 1);
     }
 
     private async Task<Result<IdempotencyContext>> ReserveIdempotencyAsync(
@@ -749,6 +776,13 @@ public sealed class OrderCommandService : IOrderCommandService
         return Error.Conflict(
             "order.stock_not_found",
             $"No se encontró el stock de {productDescription} para revertir el pedido.");
+    }
+
+    private static Error StockReversalUnavailable()
+    {
+        return Error.Conflict(
+            "order.stock_reversal_unavailable",
+            "No se puede cancelar porque los movimientos de confirmacion no coinciden con el pedido.");
     }
 
     private static Error IdempotencyConflict()

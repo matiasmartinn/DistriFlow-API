@@ -5,6 +5,12 @@ namespace DistriFlow.Domain.StockMovements;
 
 public interface IStockMovementRepository
 {
+    Task<IReadOnlyList<StockMovement>> GetByReferenceAsync(
+        DistributorId distributorId,
+        StockMovementReferenceType referenceType,
+        Guid referenceId,
+        CancellationToken cancellationToken = default);
+
     Task<(IReadOnlyList<StockMovement> Items, int TotalCount)> GetPagedAsync(
         DistributorId distributorId,
         ProductId? productId,

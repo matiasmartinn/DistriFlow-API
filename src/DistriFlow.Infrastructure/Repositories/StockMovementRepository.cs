@@ -13,6 +13,21 @@ public sealed class StockMovementRepository
     public StockMovementRepository(DistriFlowDbContext context)
         : base(context) { }
 
+    public async Task<IReadOnlyList<StockMovement>> GetByReferenceAsync(
+        DistributorId distributorId,
+        StockMovementReferenceType referenceType,
+        Guid referenceId,
+        CancellationToken cancellationToken = default)
+    {
+        return await DbSet
+            .AsNoTracking()
+            .Where(movement => movement.DistributorId == distributorId
+                && movement.ReferenceType == referenceType
+                && movement.ReferenceId == referenceId)
+            .OrderBy(movement => movement.ProductId)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<(IReadOnlyList<StockMovement> Items, int TotalCount)> GetPagedAsync(
         DistributorId distributorId,
         ProductId? productId,
