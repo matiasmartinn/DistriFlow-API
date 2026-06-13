@@ -32,6 +32,14 @@ public interface IUserRepository
         Email email,
         CancellationToken cancellationToken = default);
 
+    Task LockAdministrationAsync(
+        DistributorId distributorId,
+        CancellationToken cancellationToken = default);
+
+    Task<int> CountActiveAdministratorsAsync(
+        DistributorId distributorId,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(
         User user,
         CancellationToken cancellationToken = default);

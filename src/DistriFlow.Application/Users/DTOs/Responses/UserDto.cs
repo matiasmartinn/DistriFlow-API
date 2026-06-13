@@ -5,4 +5,9 @@ public sealed record UserDto(
     string Name,
     string Email,
     string Role,
-    string Status);
+    string Status,
+    Guid? CreatedByUserId,
+    DateTime? LastLoginAtUtc,
+    DateTime? DeactivatedAtUtc,
+    Guid? DeactivatedByUserId,
+    string? DeactivationReason);

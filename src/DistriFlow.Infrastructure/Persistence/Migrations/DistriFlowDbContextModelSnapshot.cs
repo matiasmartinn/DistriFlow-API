@@ -471,6 +471,23 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<DateTime?>("DeactivatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deactivated_at_utc");
+
+                    b.Property<Guid?>("DeactivatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deactivated_by_user_id");
+
+                    b.Property<string>("DeactivationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("deactivation_reason");
+
                     b.Property<Guid>("DistributorId")
                         .HasColumnType("uuid")
                         .HasColumnName("distributor_id");
@@ -480,6 +497,10 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
                         .HasMaxLength(320)
                         .HasColumnType("character varying(320)")
                         .HasColumnName("email");
+
+                    b.Property<DateTime?>("LastLoginAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_login_at_utc");
 
                     b.Property<string>("Name")
                         .IsRequired()

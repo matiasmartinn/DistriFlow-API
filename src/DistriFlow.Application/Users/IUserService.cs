@@ -15,6 +15,10 @@ public interface IUserService
         UserListRequest request,
         CancellationToken cancellationToken = default);
 
+    Task<Result<UserDto>> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default);
+
     Task<Result> ChangeRoleAsync(
         Guid id,
         ChangeUserRoleRequest request,
@@ -22,6 +26,7 @@ public interface IUserService
 
     Task<Result> DeactivateAsync(
         Guid id,
+        DeactivateUserRequest request,
         CancellationToken cancellationToken = default);
 
     Task<Result> ReactivateAsync(

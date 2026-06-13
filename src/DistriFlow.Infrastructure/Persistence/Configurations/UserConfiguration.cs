@@ -56,6 +56,28 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .HasConversion<string>()
             .HasMaxLength(30);
 
+        builder.Property(user => user.CreatedByUserId)
+            .IsRequired(false)
+            .HasConversion(
+                id => id!.Value.Value,
+                value => UserId.From(value));
+
+        builder.Property(user => user.LastLoginAtUtc)
+            .IsRequired(false);
+
+        builder.Property(user => user.DeactivatedAtUtc)
+            .IsRequired(false);
+
+        builder.Property(user => user.DeactivatedByUserId)
+            .IsRequired(false)
+            .HasConversion(
+                id => id!.Value.Value,
+                value => UserId.From(value));
+
+        builder.Property(user => user.DeactivationReason)
+            .IsRequired(false)
+            .HasMaxLength(500);
+
         builder.HasIndex(user => user.DistributorId);
 
         builder.HasIndex(user => user.Email)

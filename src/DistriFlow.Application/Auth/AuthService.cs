@@ -1,6 +1,7 @@
 using DistriFlow.Application.Auth.DTOs;
 using DistriFlow.Application.Common.Results;
 using DistriFlow.Application.Common.Security;
+using DistriFlow.Domain.Common;
 using DistriFlow.Domain.Common.Errors;
 using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.Distributors;
@@ -15,19 +16,22 @@ public sealed class AuthService : IAuthService
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenGenerator _tokenGenerator;
     private readonly ICurrentUserContext _currentUserContext;
+    private readonly IUnitOfWork _unitOfWork;
 
     public AuthService(
         IUserRepository userRepository,
         IDistributorRepository distributorRepository,
         IPasswordHasher passwordHasher,
         IJwtTokenGenerator tokenGenerator,
-        ICurrentUserContext currentUserContext)
+        ICurrentUserContext currentUserContext,
+        IUnitOfWork unitOfWork)
     {
         _userRepository = userRepository;
         _distributorRepository = distributorRepository;
         _passwordHasher = passwordHasher;
         _tokenGenerator = tokenGenerator;
         _currentUserContext = currentUserContext;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result<LoginResponse>> LoginAsync(
@@ -77,8 +81,10 @@ public sealed class AuthService : IAuthService
                 "La distribuidora se encuentra suspendida.");
         }
 
-        var token = _tokenGenerator.Generate(user);
+        user.RegisterSuccessfulLogin(DateTime.UtcNow);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        var token = _tokenGenerator.Generate(user);
         return new LoginResponse(
             token.Value,
             token.ExpiresAtUtc,

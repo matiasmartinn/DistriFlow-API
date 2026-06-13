@@ -12,6 +12,11 @@ internal static class UserMapper
             user.Name,
             user.Email.Value,
             user.Role.Value,
-            user.Status.ToString());
+            user.Status.ToString(),
+            user.CreatedByUserId?.Value,
+            user.LastLoginAtUtc,
+            user.DeactivatedAtUtc,
+            user.DeactivatedByUserId?.Value,
+            user.DeactivationReason);
     }
 }

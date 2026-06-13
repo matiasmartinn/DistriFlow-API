@@ -52,7 +52,8 @@ public sealed class UserService : IUserService
                 request.Name,
                 email,
                 PasswordHash.From(_passwordHasher.Hash(request.Password)),
-                Role.From(request.Role));
+                Role.From(request.Role),
+                _currentUserContext.UserId);
 
             await _userRepository.AddAsync(user, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -104,27 +105,111 @@ public sealed class UserService : IUserService
         }
     }
 
-    public Task<Result> ChangeRoleAsync(
+    public async Task<Result<UserDto>> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var user = await GetUserAsync(id, cancellationToken);
+            return user is null ? UserNotFound() : user.ToDto();
+        }
+        catch (DomainException exception)
+        {
+            return Error.Validation("user.invalid_id", exception.Message);
+        }
+    }
+
+    public async Task<Result> ChangeRoleAsync(
         Guid id,
         ChangeUserRoleRequest request,
         CancellationToken cancellationToken = default)
     {
-        return ChangeAsync(
-            id,
-            user => user.ChangeRole(Role.From(request.Role)),
-            "user.invalid_role",
+        await using var transaction = await _unitOfWork.BeginTransactionAsync(
             cancellationToken);
+
+        try
+        {
+            var role = Role.From(request.Role);
+            await _userRepository.LockAdministrationAsync(
+                _currentUserContext.DistributorId,
+                cancellationToken);
+
+            var user = await GetUserAsync(id, cancellationToken);
+
+            if (user is null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return UserNotFound();
+            }
+
+            if (user.Status == UserStatus.Active
+                && user.Role == Role.Administrator
+                && role != Role.Administrator
+                && await IsLastActiveAdministratorAsync(cancellationToken))
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return LastAdministratorRequired();
+            }
+
+            user.ChangeRole(role);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            return Result.Success();
+        }
+        catch (DomainException exception)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Error.Domain("user.invalid_role", exception.Message);
+        }
     }
 
-    public Task<Result> DeactivateAsync(
+    public async Task<Result> DeactivateAsync(
         Guid id,
+        DeactivateUserRequest request,
         CancellationToken cancellationToken = default)
     {
-        return ChangeAsync(
-            id,
-            user => user.Deactivate(),
-            "user.invalid_status",
+        await using var transaction = await _unitOfWork.BeginTransactionAsync(
             cancellationToken);
+
+        try
+        {
+            await _userRepository.LockAdministrationAsync(
+                _currentUserContext.DistributorId,
+                cancellationToken);
+
+            var user = await GetUserAsync(id, cancellationToken);
+
+            if (user is null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return UserNotFound();
+            }
+
+            if (user.Status == UserStatus.Active
+                && user.Role == Role.Administrator
+                && await IsLastActiveAdministratorAsync(cancellationToken))
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return LastAdministratorRequired();
+            }
+
+            user.Deactivate(
+                _currentUserContext.UserId,
+                DateTime.UtcNow,
+                request.Reason);
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            return Result.Success();
+        }
+        catch (DomainException exception)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return Error.Domain("user.invalid_status", exception.Message);
+        }
     }
 
     public Task<Result> ReactivateAsync(
@@ -146,17 +231,10 @@ public sealed class UserService : IUserService
     {
         try
         {
-            var user = await _userRepository.GetByIdAsync(
-                _currentUserContext.DistributorId,
-                UserId.From(id),
-                cancellationToken);
+            var user = await GetUserAsync(id, cancellationToken);
 
             if (user is null)
-            {
-                return Error.NotFound(
-                    "user.not_found",
-                    "Usuario no encontrado.");
-            }
+                return UserNotFound();
 
             change(user);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -167,6 +245,36 @@ public sealed class UserService : IUserService
         {
             return Error.Domain(errorCode, exception.Message);
         }
+    }
+
+    private Task<User?> GetUserAsync(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        return _userRepository.GetByIdAsync(
+            _currentUserContext.DistributorId,
+            UserId.From(id),
+            cancellationToken);
+    }
+
+    private async Task<bool> IsLastActiveAdministratorAsync(
+        CancellationToken cancellationToken)
+    {
+        return await _userRepository.CountActiveAdministratorsAsync(
+            _currentUserContext.DistributorId,
+            cancellationToken) <= 1;
+    }
+
+    private static Error UserNotFound()
+    {
+        return Error.NotFound("user.not_found", "Usuario no encontrado.");
+    }
+
+    private static Error LastAdministratorRequired()
+    {
+        return Error.Conflict(
+            "user.last_administrator_required",
+            "La distribuidora debe conservar al menos un administrador activo.");
     }
 
     private static bool TryParseStatus(string? value, out UserStatus? status)

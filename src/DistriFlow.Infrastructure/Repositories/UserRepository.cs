@@ -1,8 +1,10 @@
+using System.Data;
 using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.Distributors;
 using DistriFlow.Domain.Users;
 using DistriFlow.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DistriFlow.Infrastructure.Repositories;
 
@@ -36,8 +38,44 @@ public sealed class UserRepository
         Email email,
         CancellationToken cancellationToken = default)
     {
-        return DbSet.AsNoTracking().FirstOrDefaultAsync(
+        return DbSet.FirstOrDefaultAsync(
             user => user.Email == email,
+            cancellationToken);
+    }
+
+    public async Task LockAdministrationAsync(
+        DistributorId distributorId,
+        CancellationToken cancellationToken = default)
+    {
+        var connection = Context.Database.GetDbConnection();
+
+        if (connection.State != ConnectionState.Open)
+            await connection.OpenAsync(cancellationToken);
+
+        await using var command = connection.CreateCommand();
+        command.Transaction = Context.Database.CurrentTransaction?.GetDbTransaction();
+        command.CommandText = """
+            SELECT pg_advisory_xact_lock(
+                hashtext('user_administration'),
+                hashtext(@distributor_id));
+            """;
+
+        var parameter = command.CreateParameter();
+        parameter.ParameterName = "distributor_id";
+        parameter.Value = distributorId.Value.ToString();
+        command.Parameters.Add(parameter);
+
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public Task<int> CountActiveAdministratorsAsync(
+        DistributorId distributorId,
+        CancellationToken cancellationToken = default)
+    {
+        return DbSet.CountAsync(
+            user => user.DistributorId == distributorId
+                && user.Status == UserStatus.Active
+                && user.Role == Role.Administrator,
             cancellationToken);
     }
 

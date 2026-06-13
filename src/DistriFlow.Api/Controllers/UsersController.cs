@@ -37,6 +37,15 @@ public sealed class UsersController : BaseController
             await _service.GetPagedAsync(request, cancellationToken));
     }
 
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken)
+    {
+        return HandleResult(
+            await _service.GetByIdAsync(id, cancellationToken));
+    }
+
     [HttpPatch("{id:guid}/role")]
     public async Task<IActionResult> ChangeRole(
         [FromRoute] Guid id,
@@ -50,10 +59,11 @@ public sealed class UsersController : BaseController
     [HttpPatch("{id:guid}/deactivate")]
     public async Task<IActionResult> Deactivate(
         [FromRoute] Guid id,
+        [FromBody] DeactivateUserRequest request,
         CancellationToken cancellationToken)
     {
         return HandleResult(
-            await _service.DeactivateAsync(id, cancellationToken));
+            await _service.DeactivateAsync(id, request, cancellationToken));
     }
 
     [HttpPatch("{id:guid}/reactivate")]
