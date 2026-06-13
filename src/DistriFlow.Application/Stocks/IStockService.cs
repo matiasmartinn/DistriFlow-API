@@ -1,4 +1,5 @@
 using DistriFlow.Application.Common.Results;
+using DistriFlow.Application.Common.Pagination;
 using DistriFlow.Application.Stocks.DTOs.Requests;
 using DistriFlow.Application.Stocks.DTOs.Responses;
 
@@ -18,5 +19,9 @@ public interface IStockService
     Task<Result<StockDto>> AdjustAsync(
         Guid productId,
         AdjustStockRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<PagedResponse<StockMovementDto>>> GetMovementsAsync(
+        StockMovementListRequest request,
         CancellationToken cancellationToken = default);
 }

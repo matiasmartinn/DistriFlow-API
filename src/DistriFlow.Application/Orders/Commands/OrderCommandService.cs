@@ -13,6 +13,7 @@ using DistriFlow.Domain.Orders;
 using DistriFlow.Domain.PriceLists;
 using DistriFlow.Domain.Products;
 using DistriFlow.Domain.Stocks;
+using DistriFlow.Domain.StockMovements;
 using DistriFlow.Domain.Users;
 
 namespace DistriFlow.Application.Orders.Commands;
@@ -26,6 +27,7 @@ public sealed class OrderCommandService : IOrderCommandService
     private readonly IDistributorRepository _distributorRepository;
     private readonly IDistributorConfigurationRepository _configurationRepository;
     private readonly IStockRepository _stockRepository;
+    private readonly IStockMovementRepository _stockMovementRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserContext _currentUserContext;
 
@@ -37,6 +39,7 @@ public sealed class OrderCommandService : IOrderCommandService
         IDistributorRepository distributorRepository,
         IDistributorConfigurationRepository configurationRepository,
         IStockRepository stockRepository,
+        IStockMovementRepository stockMovementRepository,
         IUnitOfWork unitOfWork,
         ICurrentUserContext currentUserContext)
     {
@@ -47,6 +50,7 @@ public sealed class OrderCommandService : IOrderCommandService
         _distributorRepository = distributorRepository;
         _configurationRepository = configurationRepository;
         _stockRepository = stockRepository;
+        _stockMovementRepository = stockMovementRepository;
         _unitOfWork = unitOfWork;
         _currentUserContext = currentUserContext;
     }
@@ -268,34 +272,37 @@ public sealed class OrderCommandService : IOrderCommandService
             foreach (var line in order.OrderLines.OrderBy(
                          line => line.ProductId.Value))
             {
-                var decreased = await _stockRepository.TryDecreaseAsync(
+                var stockChange = await _stockRepository.TryDecreaseAsync(
                     _currentUserContext.DistributorId,
                     line.ProductId,
                     line.Quantity,
                     allowNegative,
                     cancellationToken);
 
-                if (!decreased)
+                if (stockChange is null)
                 {
                     await transaction.RollbackAsync(cancellationToken);
                     return InsufficientStock(line.ProductDescription);
                 }
+
+                await _stockMovementRepository.AddAsync(
+                    StockMovement.Create(
+                        _currentUserContext.DistributorId,
+                        line.ProductId,
+                        StockMovementType.Exit,
+                        line.Quantity.Amount,
+                        stockChange.PreviousQuantity,
+                        stockChange.ResultingQuantity,
+                        stockChange.SaleUnit,
+                        StockMovementReferenceType.Order,
+                        order.Id.Value,
+                        null,
+                        confirmedAtUtc,
+                        _currentUserContext.UserId),
+                    cancellationToken);
             }
 
-            var markedConfirmed = await _orderRepository.TryMarkConfirmedAsync(
-                _currentUserContext.DistributorId,
-                order.Id,
-                request.RowVersion,
-                _currentUserContext.UserId,
-                confirmedAtUtc,
-                cancellationToken);
-
-            if (!markedConfirmed)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                return OrderConfirmationConflict();
-            }
-
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return order.ToDto();
         }
@@ -346,36 +353,37 @@ public sealed class OrderCommandService : IOrderCommandService
                 foreach (var line in order.OrderLines.OrderBy(
                              line => line.ProductId.Value))
                 {
-                    var increased = await _stockRepository.TryIncreaseAsync(
+                    var stockChange = await _stockRepository.TryIncreaseAsync(
                         _currentUserContext.DistributorId,
                         line.ProductId,
                         line.Quantity,
                         cancellationToken);
 
-                    if (!increased)
+                    if (stockChange is null)
                     {
                         await transaction.RollbackAsync(cancellationToken);
                         return StockNotFound(line.ProductDescription);
                     }
+
+                    await _stockMovementRepository.AddAsync(
+                        StockMovement.Create(
+                            _currentUserContext.DistributorId,
+                            line.ProductId,
+                            StockMovementType.OrderCancellationReversal,
+                            line.Quantity.Amount,
+                            stockChange.PreviousQuantity,
+                            stockChange.ResultingQuantity,
+                            stockChange.SaleUnit,
+                            StockMovementReferenceType.OrderCancellation,
+                            order.Id.Value,
+                            order.CancellationReason,
+                            cancelledAtUtc,
+                            _currentUserContext.UserId),
+                        cancellationToken);
                 }
             }
 
-            var markedCancelled = await _orderRepository.TryMarkCancelledAsync(
-                _currentUserContext.DistributorId,
-                order.Id,
-                previousStatus,
-                request.RowVersion,
-                _currentUserContext.UserId,
-                cancelledAtUtc,
-                order.CancellationReason!,
-                cancellationToken);
-
-            if (!markedCancelled)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                return OrderCancellationConflict();
-            }
-
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return order.ToDto();
         }
@@ -537,13 +545,6 @@ public sealed class OrderCommandService : IOrderCommandService
             $"El stock disponible de {productDescription} es insuficiente.");
     }
 
-    private static Error OrderConfirmationConflict()
-    {
-        return Error.Conflict(
-            "order.confirmation_conflict",
-            "El pedido ya no se encuentra disponible para confirmar.");
-    }
-
     private static Error OrderConcurrencyConflict()
     {
         return Error.Conflict(
@@ -565,10 +566,4 @@ public sealed class OrderCommandService : IOrderCommandService
             $"No se encontró el stock de {productDescription} para revertir el pedido.");
     }
 
-    private static Error OrderCancellationConflict()
-    {
-        return Error.Conflict(
-            "order.cancellation_conflict",
-            "El pedido ya no se encuentra disponible para cancelar.");
-    }
 }

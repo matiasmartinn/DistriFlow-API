@@ -16,17 +16,24 @@ public interface IStockRepository
         IReadOnlyCollection<ProductId> productIds,
         CancellationToken cancellationToken = default);
 
-    Task<bool> TryDecreaseAsync(
+    Task<StockChange?> TryDecreaseAsync(
         DistributorId distributorId,
         ProductId productId,
         Quantity quantity,
         bool allowNegative,
         CancellationToken cancellationToken = default);
 
-    Task<bool> TryIncreaseAsync(
+    Task<StockChange?> TryIncreaseAsync(
         DistributorId distributorId,
         ProductId productId,
         Quantity quantity,
+        CancellationToken cancellationToken = default);
+
+    Task<StockChange?> TryAdjustAsync(
+        DistributorId distributorId,
+        ProductId productId,
+        Quantity expectedQuantity,
+        Quantity resultingQuantity,
         CancellationToken cancellationToken = default);
 
     Task AddAsync(

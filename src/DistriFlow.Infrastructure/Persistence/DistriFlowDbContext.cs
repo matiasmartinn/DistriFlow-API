@@ -7,6 +7,7 @@ using DistriFlow.Domain.Orders;
 using DistriFlow.Domain.PriceLists;
 using DistriFlow.Domain.Products;
 using DistriFlow.Domain.Stocks;
+using DistriFlow.Domain.StockMovements;
 using DistriFlow.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,6 +26,7 @@ public sealed class DistriFlowDbContext : DbContext, IUnitOfWork
     public DbSet<PriceList> PriceLists => Set<PriceList>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Stock> Stocks => Set<Stock>();
+    public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<User> Users => Set<User>();
 
     public async Task<IUnitOfWorkTransaction> BeginTransactionAsync(

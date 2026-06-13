@@ -46,4 +46,14 @@ public sealed class StocksController : BaseController
         return HandleResult(
             await _service.AdjustAsync(productId, request, cancellationToken));
     }
+
+    [HttpGet("movements")]
+    [Authorize(Roles = "Administrator")]
+    public async Task<IActionResult> GetMovements(
+        [FromQuery] StockMovementListRequest request,
+        CancellationToken cancellationToken)
+    {
+        return HandleResult(
+            await _service.GetMovementsAsync(request, cancellationToken));
+    }
 }

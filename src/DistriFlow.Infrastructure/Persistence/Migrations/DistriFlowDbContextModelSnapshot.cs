@@ -299,6 +299,90 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
                     b.ToTable("products", (string)null);
                 });
 
+            modelBuilder.Entity("DistriFlow.Domain.StockMovements.StockMovement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<Guid>("DistributorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("distributor_id");
+
+                    b.Property<decimal>("PreviousQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("previous_quantity");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("quantity");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid?>("ReferenceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reference_id");
+
+                    b.Property<string>("ReferenceType")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("reference_type");
+
+                    b.Property<decimal>("ResultingQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("resulting_quantity");
+
+                    b.Property<string>("SaleUnit")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("sale_unit");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("type");
+
+                    b.HasKey("Id")
+                        .HasName("pk_stock_movements");
+
+                    b.HasIndex("DistributorId")
+                        .HasDatabaseName("ix_stock_movements_distributor_id");
+
+                    b.HasIndex("DistributorId", "ProductId", "CreatedAtUtc")
+                        .HasDatabaseName("ix_stock_movements_distributor_id_product_id_created_at_utc");
+
+                    b.HasIndex("DistributorId", "ReferenceType", "ReferenceId")
+                        .HasDatabaseName("ix_stock_movements_distributor_id_reference_type_reference_id");
+
+                    b.HasIndex("DistributorId", "ProductId", "Type", "ReferenceType", "ReferenceId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_stock_movements_unique_business_reference")
+                        .HasFilter("reference_id IS NOT NULL");
+
+                    b.ToTable("stock_movements", (string)null);
+                });
+
             modelBuilder.Entity("DistriFlow.Domain.Stocks.Stock", b =>
                 {
                     b.Property<Guid>("Id")
