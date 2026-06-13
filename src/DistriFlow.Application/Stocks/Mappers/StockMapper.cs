@@ -12,7 +12,8 @@ public static class StockMapper
         return new StockDto(
             stock.ProductId.Value,
             stock.Available.Amount,
-            stock.Available.Unit.Value);
+            stock.Available.Unit.Value,
+            stock.RowVersion);
     }
 
     public static StockDto ToEmptyStockDto(this Product product)
@@ -20,7 +21,8 @@ public static class StockMapper
         return new StockDto(
             product.Id.Value,
             0,
-            product.SaleUnit.Value);
+            product.SaleUnit.Value,
+            0);
     }
 
     public static StockDto ToDto(this StockChange change, ProductId productId)
@@ -28,7 +30,8 @@ public static class StockMapper
         return new StockDto(
             productId.Value,
             change.ResultingQuantity,
-            change.SaleUnit.Value);
+            change.SaleUnit.Value,
+            change.RowVersion);
     }
 
     public static StockMovementDto ToDto(this StockMovement movement)

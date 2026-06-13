@@ -5,4 +5,5 @@ namespace DistriFlow.Domain.Stocks;
 public sealed record StockChange(
     decimal PreviousQuantity,
     decimal ResultingQuantity,
-    SaleUnit SaleUnit);
+    SaleUnit SaleUnit,
+    long RowVersion);

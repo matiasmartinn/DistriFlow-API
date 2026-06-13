@@ -9,6 +9,7 @@ using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.Customers;
 using DistriFlow.Domain.DistributorConfigurations;
 using DistriFlow.Domain.Distributors;
+using DistriFlow.Domain.Idempotency;
 using DistriFlow.Domain.Orders;
 using DistriFlow.Domain.PriceLists;
 using DistriFlow.Domain.Products;
@@ -28,6 +29,7 @@ public sealed class OrderCommandService : IOrderCommandService
     private readonly IDistributorConfigurationRepository _configurationRepository;
     private readonly IStockRepository _stockRepository;
     private readonly IStockMovementRepository _stockMovementRepository;
+    private readonly IIdempotencyRecordRepository _idempotencyRecordRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserContext _currentUserContext;
 
@@ -40,6 +42,7 @@ public sealed class OrderCommandService : IOrderCommandService
         IDistributorConfigurationRepository configurationRepository,
         IStockRepository stockRepository,
         IStockMovementRepository stockMovementRepository,
+        IIdempotencyRecordRepository idempotencyRecordRepository,
         IUnitOfWork unitOfWork,
         ICurrentUserContext currentUserContext)
     {
@@ -51,12 +54,14 @@ public sealed class OrderCommandService : IOrderCommandService
         _configurationRepository = configurationRepository;
         _stockRepository = stockRepository;
         _stockMovementRepository = stockMovementRepository;
+        _idempotencyRecordRepository = idempotencyRecordRepository;
         _unitOfWork = unitOfWork;
         _currentUserContext = currentUserContext;
     }
 
     public async Task<Result<OrderDto>> StartAsync(
         StartOrderRequest request,
+        string? idempotencyKey,
         CancellationToken cancellationToken = default)
     {
         try
@@ -76,6 +81,28 @@ public sealed class OrderCommandService : IOrderCommandService
 
             await using var transaction = await _unitOfWork.BeginTransactionAsync(
                 cancellationToken);
+
+            var idempotency = await ReserveIdempotencyAsync(
+                idempotencyKey,
+                IdempotentOperation.StartOrder,
+                null,
+                cancellationToken);
+
+            if (idempotency.IsFailure)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return idempotency.Error;
+            }
+
+            if (!idempotency.Data!.Reservation.Acquired)
+            {
+                var replay = await ReplayOrderAsync(
+                    idempotency.Data.Reservation,
+                    cancellationToken);
+
+                await transaction.RollbackAsync(cancellationToken);
+                return replay;
+            }
 
             var orderNumber = await _configurationRepository.ReserveNextOrderNumberAsync(
                 _currentUserContext.DistributorId,
@@ -98,6 +125,20 @@ public sealed class OrderCommandService : IOrderCommandService
 
             await _orderRepository.AddAsync(order, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            var resourceAssigned = await _idempotencyRecordRepository.TrySetResourceIdAsync(
+                _currentUserContext.DistributorId,
+                idempotency.Data.Key,
+                IdempotentOperation.StartOrder,
+                order.Id.Value,
+                cancellationToken);
+
+            if (!resourceAssigned)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return IdempotencyConflict();
+            }
+
             await transaction.CommitAsync(cancellationToken);
 
             return order.ToDto();
@@ -234,6 +275,7 @@ public sealed class OrderCommandService : IOrderCommandService
     public async Task<Result<OrderDto>> ConfirmAsync(
         Guid orderId,
         ConfirmOrderRequest request,
+        string? idempotencyKey,
         CancellationToken cancellationToken = default)
     {
         await using var transaction = await _unitOfWork.BeginTransactionAsync(
@@ -241,6 +283,28 @@ public sealed class OrderCommandService : IOrderCommandService
 
         try
         {
+            var idempotency = await ReserveIdempotencyAsync(
+                idempotencyKey,
+                IdempotentOperation.ConfirmOrder,
+                orderId,
+                cancellationToken);
+
+            if (idempotency.IsFailure)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return idempotency.Error;
+            }
+
+            if (!idempotency.Data!.Reservation.Acquired)
+            {
+                var replay = await ReplayOrderAsync(
+                    idempotency.Data.Reservation,
+                    cancellationToken);
+
+                await transaction.RollbackAsync(cancellationToken);
+                return replay;
+            }
+
             var orderResult = await GetEditableOrderAsync(orderId, cancellationToken);
 
             if (orderResult.IsFailure)
@@ -321,6 +385,7 @@ public sealed class OrderCommandService : IOrderCommandService
     public async Task<Result<OrderDto>> CancelAsync(
         Guid orderId,
         CancelOrderRequest request,
+        string? idempotencyKey,
         CancellationToken cancellationToken = default)
     {
         await using var transaction = await _unitOfWork.BeginTransactionAsync(
@@ -328,6 +393,28 @@ public sealed class OrderCommandService : IOrderCommandService
 
         try
         {
+            var idempotency = await ReserveIdempotencyAsync(
+                idempotencyKey,
+                IdempotentOperation.CancelOrder,
+                orderId,
+                cancellationToken);
+
+            if (idempotency.IsFailure)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return idempotency.Error;
+            }
+
+            if (!idempotency.Data!.Reservation.Acquired)
+            {
+                var replay = await ReplayOrderAsync(
+                    idempotency.Data.Reservation,
+                    cancellationToken);
+
+                await transaction.RollbackAsync(cancellationToken);
+                return replay;
+            }
+
             var order = await _orderRepository.GetByIdAsync(
                 _currentUserContext.DistributorId,
                 OrderId.From(orderId),
@@ -417,6 +504,61 @@ public sealed class OrderCommandService : IOrderCommandService
             cancellationToken);
 
         return availabilityError is null ? order : availabilityError;
+    }
+
+    private async Task<Result<IdempotencyContext>> ReserveIdempotencyAsync(
+        string? idempotencyKey,
+        IdempotentOperation operation,
+        Guid? resourceId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var record = IdempotencyRecord.Create(
+                _currentUserContext.DistributorId,
+                _currentUserContext.UserId,
+                idempotencyKey,
+                operation,
+                resourceId,
+                DateTime.UtcNow);
+
+            var reservation = await _idempotencyRecordRepository.ReserveAsync(
+                record,
+                cancellationToken);
+
+            if (!reservation.Acquired
+                && (reservation.CreatedByUserId != _currentUserContext.UserId
+                    || reservation.Operation != operation
+                    || (resourceId.HasValue
+                        && reservation.ResourceId != resourceId)))
+            {
+                return IdempotencyConflict();
+            }
+
+            return new IdempotencyContext(record.Key, reservation);
+        }
+        catch (DomainException exception)
+        {
+            return Error.Validation("idempotency.invalid_key", exception.Message);
+        }
+    }
+
+    private async Task<Result<OrderDto>> ReplayOrderAsync(
+        IdempotencyReservation reservation,
+        CancellationToken cancellationToken)
+    {
+        if (!reservation.ResourceId.HasValue)
+            return IdempotencyConflict();
+
+        var order = await _orderRepository.GetByIdAsync(
+            _currentUserContext.DistributorId,
+            OrderId.From(reservation.ResourceId.Value),
+            cancellationToken);
+
+        if (order is null || order.SalesRepId != _currentUserContext.UserId)
+            return IdempotencyConflict();
+
+        return order.ToDto();
     }
 
     private async Task<Error?> GetOrderingAvailabilityErrorAsync(
@@ -566,4 +708,14 @@ public sealed class OrderCommandService : IOrderCommandService
             $"No se encontró el stock de {productDescription} para revertir el pedido.");
     }
 
+    private static Error IdempotencyConflict()
+    {
+        return Error.Conflict(
+            "idempotency.key_conflict",
+            "Idempotency-Key ya fue utilizada para otra operacion o recurso.");
+    }
+
+    private sealed record IdempotencyContext(
+        string Key,
+        IdempotencyReservation Reservation);
 }

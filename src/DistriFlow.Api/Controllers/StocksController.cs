@@ -30,10 +30,15 @@ public sealed class StocksController : BaseController
     public async Task<IActionResult> Increase(
         [FromRoute] Guid productId,
         [FromBody] IncreaseStockRequest request,
+        [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
         CancellationToken cancellationToken)
     {
         return HandleResult(
-            await _service.IncreaseAsync(productId, request, cancellationToken));
+            await _service.IncreaseAsync(
+                productId,
+                request,
+                idempotencyKey,
+                cancellationToken));
     }
 
     [HttpPut("by-product/{productId:guid}/adjust")]
@@ -41,10 +46,15 @@ public sealed class StocksController : BaseController
     public async Task<IActionResult> Adjust(
         [FromRoute] Guid productId,
         [FromBody] AdjustStockRequest request,
+        [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
         CancellationToken cancellationToken)
     {
         return HandleResult(
-            await _service.AdjustAsync(productId, request, cancellationToken));
+            await _service.AdjustAsync(
+                productId,
+                request,
+                idempotencyKey,
+                cancellationToken));
     }
 
     [HttpGet("movements")]

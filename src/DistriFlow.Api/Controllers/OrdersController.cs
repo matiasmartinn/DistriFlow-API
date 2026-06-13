@@ -25,10 +25,14 @@ public sealed class OrdersController : BaseController
     [Authorize(Roles = "SalesRep")]
     public async Task<IActionResult> Start(
         [FromBody] StartOrderRequest request,
+        [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
         CancellationToken cancellationToken)
     {
         return HandleResult(
-            await _commandService.StartAsync(request, cancellationToken),
+            await _commandService.StartAsync(
+                request,
+                idempotencyKey,
+                cancellationToken),
             StatusCodes.Status201Created);
     }
 
@@ -98,10 +102,15 @@ public sealed class OrdersController : BaseController
     public async Task<IActionResult> Confirm(
         [FromRoute] Guid id,
         [FromBody] ConfirmOrderRequest request,
+        [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
         CancellationToken cancellationToken)
     {
         return HandleResult(
-            await _commandService.ConfirmAsync(id, request, cancellationToken));
+            await _commandService.ConfirmAsync(
+                id,
+                request,
+                idempotencyKey,
+                cancellationToken));
     }
 
     [HttpPatch("{id:guid}/cancel")]
@@ -109,9 +118,14 @@ public sealed class OrdersController : BaseController
     public async Task<IActionResult> Cancel(
         [FromRoute] Guid id,
         [FromBody] CancelOrderRequest request,
+        [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
         CancellationToken cancellationToken)
     {
         return HandleResult(
-            await _commandService.CancelAsync(id, request, cancellationToken));
+            await _commandService.CancelAsync(
+                id,
+                request,
+                idempotencyKey,
+                cancellationToken));
     }
 }

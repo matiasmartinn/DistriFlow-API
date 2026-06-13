@@ -28,6 +28,7 @@ internal static class ProductMapper
             product.SaleUnit.Value,
             product.BasePrice.Amount,
             product.Status.ToString(),
-            stock?.Available.Amount ?? 0);
+            stock?.Available.Amount ?? 0,
+            stock?.RowVersion ?? 0);
     }
 }

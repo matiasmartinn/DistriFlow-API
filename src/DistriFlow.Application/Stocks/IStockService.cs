@@ -14,11 +14,13 @@ public interface IStockService
     Task<Result<StockDto>> IncreaseAsync(
         Guid productId,
         IncreaseStockRequest request,
+        string? idempotencyKey,
         CancellationToken cancellationToken = default);
 
     Task<Result<StockDto>> AdjustAsync(
         Guid productId,
         AdjustStockRequest request,
+        string? idempotencyKey,
         CancellationToken cancellationToken = default);
 
     Task<Result<PagedResponse<StockMovementDto>>> GetMovementsAsync(

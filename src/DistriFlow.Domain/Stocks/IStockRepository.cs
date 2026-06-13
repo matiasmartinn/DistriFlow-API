@@ -34,6 +34,7 @@ public interface IStockRepository
         ProductId productId,
         Quantity expectedQuantity,
         Quantity resultingQuantity,
+        long expectedRowVersion,
         CancellationToken cancellationToken = default);
 
     Task AddAsync(

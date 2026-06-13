@@ -1,3 +1,4 @@
+using DistriFlow.Domain.Common.Errors;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,12 +20,23 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
     {
         var clientCancelled = exception is OperationCanceledException
             && httpContext.RequestAborted.IsCancellationRequested;
+        var concurrencyConflict = exception is ConcurrencyException;
 
         var statusCode = clientCancelled
             ? 499
-            : StatusCodes.Status500InternalServerError;
+            : concurrencyConflict
+                ? StatusCodes.Status409Conflict
+                : StatusCodes.Status500InternalServerError;
 
-        if (!clientCancelled)
+        if (concurrencyConflict)
+        {
+            _logger.LogWarning(
+                exception,
+                "Conflicto de concurrencia en {Method} {Path}",
+                httpContext.Request.Method,
+                httpContext.Request.Path);
+        }
+        else if (!clientCancelled)
         {
             _logger.LogError(
                 exception,
@@ -36,16 +48,24 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
         var problemDetails = new ProblemDetails
         {
             Status = statusCode,
-            Title = clientCancelled ? "Solicitud cancelada" : "Error inesperado",
+            Title = clientCancelled
+                ? "Solicitud cancelada"
+                : concurrencyConflict
+                    ? "Conflicto"
+                    : "Error inesperado",
             Detail = clientCancelled
-                ? "El cliente canceló la solicitud."
-                : "Ocurrió un error inesperado.",
+                ? "El cliente cancelo la solicitud."
+                : concurrencyConflict
+                    ? "El recurso fue modificado por otra operacion. Actualiza los datos e intenta nuevamente."
+                    : "Ocurrio un error inesperado.",
             Instance = httpContext.Request.Path
         };
 
         problemDetails.Extensions["code"] = clientCancelled
             ? "request.cancelled"
-            : "unexpected.error";
+            : concurrencyConflict
+                ? "concurrency.conflict"
+                : "unexpected.error";
         problemDetails.Extensions["traceId"] = httpContext.TraceIdentifier;
 
         httpContext.Response.StatusCode = statusCode;

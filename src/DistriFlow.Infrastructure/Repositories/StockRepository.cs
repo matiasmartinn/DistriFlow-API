@@ -49,18 +49,20 @@ public sealed class StockRepository
         return ExecuteChangeAsync(
             """
             UPDATE stocks
-            SET available = available - @quantity
+            SET available = available - @quantity,
+                row_version = row_version + 1
             WHERE distributor_id = @distributor_id
               AND product_id = @product_id
               AND sale_unit = @sale_unit
               AND @quantity > 0
               AND (@allow_negative OR available >= @quantity)
-            RETURNING available + @quantity, available, sale_unit;
+            RETURNING available + @quantity, available, sale_unit, row_version;
             """,
             distributorId,
             productId,
             quantity,
             allowNegative,
+            null,
             null,
             cancellationToken);
     }
@@ -74,17 +76,19 @@ public sealed class StockRepository
         return ExecuteChangeAsync(
             """
             UPDATE stocks
-            SET available = available + @quantity
+            SET available = available + @quantity,
+                row_version = row_version + 1
             WHERE distributor_id = @distributor_id
               AND product_id = @product_id
               AND sale_unit = @sale_unit
               AND @quantity > 0
-            RETURNING available - @quantity, available, sale_unit;
+            RETURNING available - @quantity, available, sale_unit, row_version;
             """,
             distributorId,
             productId,
             quantity,
             true,
+            null,
             null,
             cancellationToken);
     }
@@ -94,24 +98,28 @@ public sealed class StockRepository
         ProductId productId,
         Quantity expectedQuantity,
         Quantity resultingQuantity,
+        long expectedRowVersion,
         CancellationToken cancellationToken = default)
     {
         return ExecuteChangeAsync(
             """
             UPDATE stocks
-            SET available = @resulting_quantity
+            SET available = @resulting_quantity,
+                row_version = row_version + 1
             WHERE distributor_id = @distributor_id
               AND product_id = @product_id
               AND sale_unit = @sale_unit
               AND available = @quantity
+              AND row_version = @expected_row_version
               AND available <> @resulting_quantity
-            RETURNING @quantity, available, sale_unit;
+            RETURNING @quantity, available, sale_unit, row_version;
             """,
             distributorId,
             productId,
             expectedQuantity,
             true,
             resultingQuantity.Amount,
+            expectedRowVersion,
             cancellationToken);
     }
 
@@ -122,6 +130,7 @@ public sealed class StockRepository
         Quantity quantity,
         bool allowNegative,
         decimal? resultingQuantity,
+        long? expectedRowVersion,
         CancellationToken cancellationToken)
     {
         var connection = Context.Database.GetDbConnection();
@@ -142,6 +151,9 @@ public sealed class StockRepository
         if (resultingQuantity.HasValue)
             AddParameter(command, "resulting_quantity", resultingQuantity.Value);
 
+        if (expectedRowVersion.HasValue)
+            AddParameter(command, "expected_row_version", expectedRowVersion.Value);
+
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
         if (!await reader.ReadAsync(cancellationToken))
@@ -150,7 +162,8 @@ public sealed class StockRepository
         return new StockChange(
             reader.GetDecimal(0),
             reader.GetDecimal(1),
-            SaleUnit.Create(reader.GetString(2)));
+            SaleUnit.Create(reader.GetString(2)),
+            reader.GetInt64(3));
     }
 
     private static void AddParameter(

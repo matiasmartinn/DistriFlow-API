@@ -11,6 +11,7 @@ public sealed class Stock
     public DistributorId DistributorId { get; private set; }
     public ProductId ProductId { get; private set; }
     public Quantity Available { get; private set; } = null!;
+    public long RowVersion { get; private set; }
 
     private Stock() { }
 
@@ -18,12 +19,14 @@ public sealed class Stock
         StockId id,
         DistributorId distributorId,
         ProductId productId,
-        Quantity available)
+        Quantity available,
+        long rowVersion)
     {
         Id = id;
         DistributorId = distributorId;
         ProductId = productId;
         Available = available;
+        RowVersion = rowVersion;
     }
 
     public static Stock Create(
@@ -41,7 +44,8 @@ public sealed class Stock
             StockId.New(),
             distributorId,
             productId,
-            Quantity.Zero(saleUnit));
+            Quantity.Zero(saleUnit),
+            1);
     }
 
     public void Increase(Quantity quantity)
@@ -52,6 +56,7 @@ public sealed class Stock
         Available = Quantity.Create(
             Available.Amount + quantity.Amount,
             Available.Unit);
+        RowVersion++;
     }
 
     public void Decrease(Quantity quantity)
@@ -65,12 +70,14 @@ public sealed class Stock
         Available = Quantity.Create(
             Available.Amount - quantity.Amount,
             Available.Unit);
+        RowVersion++;
     }
 
     public void Adjust(Quantity quantity)
     {
         EnsureSameUnit(quantity);
         Available = quantity;
+        RowVersion++;
     }
 
     private void EnsureSameUnit(Quantity quantity)

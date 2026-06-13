@@ -8,6 +8,7 @@ public interface IOrderCommandService
 {
     Task<Result<OrderDto>> StartAsync(
         StartOrderRequest request,
+        string? idempotencyKey,
         CancellationToken cancellationToken = default);
 
     Task<Result<OrderDto>> AddLineAsync(
@@ -30,10 +31,12 @@ public interface IOrderCommandService
     Task<Result<OrderDto>> ConfirmAsync(
         Guid orderId,
         ConfirmOrderRequest request,
+        string? idempotencyKey,
         CancellationToken cancellationToken = default);
 
     Task<Result<OrderDto>> CancelAsync(
         Guid orderId,
         CancelOrderRequest request,
+        string? idempotencyKey,
         CancellationToken cancellationToken = default);
 }

@@ -2,6 +2,7 @@ using DistriFlow.Domain.Common;
 using DistriFlow.Domain.Customers;
 using DistriFlow.Domain.DistributorConfigurations;
 using DistriFlow.Domain.Distributors;
+using DistriFlow.Domain.Idempotency;
 using DistriFlow.Domain.Orders;
 using DistriFlow.Domain.PriceLists;
 using DistriFlow.Domain.Products;
@@ -38,6 +39,7 @@ public static class DependencyInjection
             IDistributorConfigurationRepository,
             DistributorConfigurationRepository>();
         services.AddScoped<IDistributorRepository, DistributorRepository>();
+        services.AddScoped<IIdempotencyRecordRepository, IdempotencyRecordRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddScoped<IPriceListRepository, PriceListRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();

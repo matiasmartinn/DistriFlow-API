@@ -7,4 +7,5 @@ public sealed record ProductWithStockDto(
     string SaleUnit,
     decimal BasePrice,
     string Status,
-    decimal Available);
+    decimal Available,
+    long StockRowVersion);

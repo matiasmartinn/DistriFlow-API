@@ -33,6 +33,10 @@ public sealed class StockConfiguration : IEntityTypeConfiguration<Stock>
                 id => id.Value,
                 value => ProductId.From(value));
 
+        builder.Property(stock => stock.RowVersion)
+            .IsRequired()
+            .IsConcurrencyToken();
+
         builder.HasIndex(stock => stock.DistributorId);
 
         builder.HasIndex(stock => new { stock.DistributorId, stock.ProductId })
