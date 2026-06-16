@@ -56,8 +56,10 @@ public sealed class CustomerService : ICustomerService
                 _currentUserContext.DistributorId,
                 request.Name,
                 ContactInfo.Create(request.Email, request.Phone),
+                ParseTaxCondition(request.TaxCondition),
                 CreateAddress(request.Address),
-                priceListId.Data);
+                priceListId.Data,
+                request.Zone);
 
             await _customerRepository.AddAsync(customer, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -71,17 +73,28 @@ public sealed class CustomerService : ICustomerService
     }
 
     public async Task<Result<IReadOnlyList<CustomerDto>>> GetAllAsync(
-        bool includeInactive,
+        CustomerListRequest request,
         CancellationToken cancellationToken = default)
     {
-        var customers = includeInactive
-            && _currentUserContext.Role == Role.Administrator
-                ? await _customerRepository.GetAllAsync(
-                    _currentUserContext.DistributorId,
-                    cancellationToken)
-                : await _customerRepository.GetActiveAsync(
-                    _currentUserContext.DistributorId,
-                    cancellationToken);
+        if (!TryParseStatus(request.Status, out var status))
+            return Error.Validation(
+                "customer.invalid_status",
+                "El estado del cliente es invalido.");
+
+        if (!TryParseTaxCondition(request.TaxCondition, out var taxCondition))
+            return Error.Validation(
+                "customer.invalid_tax_condition",
+                "La condicion fiscal del cliente es invalida.");
+
+        if (_currentUserContext.Role != Role.Administrator || !request.IncludeInactive)
+            status = CustomerStatus.Active;
+
+        var customers = await _customerRepository.GetFilteredAsync(
+            _currentUserContext.DistributorId,
+            status,
+            taxCondition,
+            request.Zone,
+            cancellationToken);
 
         return customers.Select(customer => customer.ToDto()).ToList();
     }
@@ -111,6 +124,19 @@ public sealed class CustomerService : ICustomerService
             customer => customer.UpdateContact(
                 ContactInfo.Create(request.Email, request.Phone),
                 CreateAddress(request.Address)),
+            cancellationToken);
+    }
+
+    public Task<Result> UpdateCommercialInfoAsync(
+        Guid id,
+        UpdateCustomerCommercialInfoRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return ChangeAsync(
+            id,
+            customer => customer.UpdateCommercialInfo(
+                request.Zone,
+                ParseTaxCondition(request.TaxCondition)),
             cancellationToken);
     }
 
@@ -156,11 +182,15 @@ public sealed class CustomerService : ICustomerService
 
     public Task<Result> DeactivateAsync(
         Guid id,
+        DeactivateCustomerRequest request,
         CancellationToken cancellationToken = default)
     {
         return ChangeAsync(
             id,
-            customer => customer.Deactivate(),
+            customer => customer.Deactivate(
+                _currentUserContext.UserId,
+                DateTime.UtcNow,
+                request.Reason),
             cancellationToken);
     }
 
@@ -356,5 +386,56 @@ public sealed class CustomerService : ICustomerService
     private static Error ProductNotFound()
     {
         return Error.NotFound("product.not_found", "Producto no encontrado.");
+    }
+
+    private static TaxCondition ParseTaxCondition(string value)
+    {
+        if (Enum.TryParse<TaxCondition>(value, true, out var taxCondition)
+            && Enum.IsDefined(taxCondition))
+        {
+            return taxCondition;
+        }
+
+        throw new DomainException("La condicion fiscal del cliente es invalida.");
+    }
+
+    private static bool TryParseTaxCondition(
+        string? value,
+        out TaxCondition? taxCondition)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            taxCondition = null;
+            return true;
+        }
+
+        if (Enum.TryParse<TaxCondition>(value, true, out var parsed)
+            && Enum.IsDefined(parsed))
+        {
+            taxCondition = parsed;
+            return true;
+        }
+
+        taxCondition = null;
+        return false;
+    }
+
+    private static bool TryParseStatus(string? value, out CustomerStatus? status)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            status = null;
+            return true;
+        }
+
+        if (Enum.TryParse<CustomerStatus>(value, true, out var parsed)
+            && Enum.IsDefined(parsed))
+        {
+            status = parsed;
+            return true;
+        }
+
+        status = null;
+        return false;
     }
 }

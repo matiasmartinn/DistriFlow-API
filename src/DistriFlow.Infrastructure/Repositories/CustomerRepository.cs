@@ -42,6 +42,34 @@ public sealed class CustomerRepository
             cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Customer>> GetFilteredAsync(
+        DistributorId distributorId,
+        CustomerStatus? status,
+        TaxCondition? taxCondition,
+        string? zone,
+        CancellationToken cancellationToken = default)
+    {
+        var query = DbSet
+            .AsNoTracking()
+            .Where(customer => customer.DistributorId == distributorId);
+
+        if (status.HasValue)
+            query = query.Where(customer => customer.Status == status.Value);
+
+        if (taxCondition.HasValue)
+            query = query.Where(customer => customer.TaxCondition == taxCondition.Value);
+
+        if (!string.IsNullOrWhiteSpace(zone))
+        {
+            var normalizedZone = zone.Trim();
+            query = query.Where(customer => customer.Zone == normalizedZone);
+        }
+
+        return await query
+            .OrderBy(customer => customer.Name)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Customer>> GetByIdsAsync(
         DistributorId distributorId,
         IReadOnlyCollection<CustomerId> ids,

@@ -6,7 +6,12 @@ public sealed record CustomerDto(
     string Email,
     string Phone,
     Guid? PriceListId,
+    string? Zone,
+    string TaxCondition,
     string Status,
+    DateTime? DeactivatedAtUtc,
+    Guid? DeactivatedByUserId,
+    string? DeactivationReason,
     string? Street,
     int? CityId,
     string? ZipCode);

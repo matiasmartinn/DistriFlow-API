@@ -34,11 +34,11 @@ public sealed class CustomersController : BaseController
 
     [HttpGet]
     public async Task<IActionResult> GetAll(
-        [FromQuery] bool includeInactive,
+        [FromQuery] CustomerListRequest request,
         CancellationToken cancellationToken)
     {
         return HandleResult(
-            await _service.GetAllAsync(includeInactive, cancellationToken));
+            await _service.GetAllAsync(request, cancellationToken));
     }
 
     [HttpGet("{id:guid}")]
@@ -57,6 +57,17 @@ public sealed class CustomersController : BaseController
     {
         return HandleResult(
             await _service.UpdateContactAsync(id, request, cancellationToken));
+    }
+
+    [HttpPut("{id:guid}/commercial-info")]
+    [Authorize(Roles = "Administrator")]
+    public async Task<IActionResult> UpdateCommercialInfo(
+        [FromRoute] Guid id,
+        [FromBody] UpdateCustomerCommercialInfoRequest request,
+        CancellationToken cancellationToken)
+    {
+        return HandleResult(
+            await _service.UpdateCommercialInfoAsync(id, request, cancellationToken));
     }
 
     [HttpPut("{id:guid}/price-list")]
@@ -84,10 +95,11 @@ public sealed class CustomersController : BaseController
     [Authorize(Roles = "Administrator")]
     public async Task<IActionResult> Deactivate(
         [FromRoute] Guid id,
+        [FromBody] DeactivateCustomerRequest request,
         CancellationToken cancellationToken)
     {
         return HandleResult(
-            await _service.DeactivateAsync(id, cancellationToken));
+            await _service.DeactivateAsync(id, request, cancellationToken));
     }
 
     [HttpPatch("{id:guid}/reactivate")]

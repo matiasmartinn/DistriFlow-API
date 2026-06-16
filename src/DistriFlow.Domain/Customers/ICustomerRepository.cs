@@ -17,6 +17,13 @@ public interface ICustomerRepository
         DistributorId distributorId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Customer>> GetFilteredAsync(
+        DistributorId distributorId,
+        CustomerStatus? status,
+        TaxCondition? taxCondition,
+        string? zone,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Customer>> GetByIdsAsync(
         DistributorId distributorId,
         IReadOnlyCollection<CustomerId> ids,

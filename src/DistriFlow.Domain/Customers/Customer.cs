@@ -2,6 +2,7 @@ using DistriFlow.Domain.Common.Errors;
 using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.Distributors;
 using DistriFlow.Domain.PriceLists;
+using DistriFlow.Domain.Users;
 
 namespace DistriFlow.Domain.Customers;
 
@@ -13,6 +14,11 @@ public sealed class Customer
     public ContactInfo Contact { get; private set; } = null!;
     public Address? Address { get; private set; }
     public PriceListId? PriceListId { get; private set; }
+    public string? Zone { get; private set; }
+    public TaxCondition TaxCondition { get; private set; }
+    public DateTime? DeactivatedAtUtc { get; private set; }
+    public UserId? DeactivatedByUserId { get; private set; }
+    public string? DeactivationReason { get; private set; }
     public CustomerStatus Status { get; private set; }
 
     private Customer() { }
@@ -23,7 +29,9 @@ public sealed class Customer
         string name,
         ContactInfo contact,
         Address? address,
-        PriceListId? priceListId)
+        PriceListId? priceListId,
+        string? zone,
+        TaxCondition taxCondition)
     {
         Id = id;
         DistributorId = distributorId;
@@ -31,6 +39,8 @@ public sealed class Customer
         Contact = contact;
         Address = address;
         PriceListId = priceListId;
+        Zone = NormalizeOptional(zone, 100, "La zona no puede superar 100 caracteres.");
+        TaxCondition = taxCondition;
         Status = CustomerStatus.Active;
     }
 
@@ -38,8 +48,10 @@ public sealed class Customer
         DistributorId distributorId,
         string name,
         ContactInfo contact,
+        TaxCondition taxCondition,
         Address? address = null,
-        PriceListId? priceListId = null)
+        PriceListId? priceListId = null,
+        string? zone = null)
     {
         if (distributorId.Value == Guid.Empty)
             throw new DomainException("La distribuidora del cliente es requerida.");
@@ -48,7 +60,9 @@ public sealed class Customer
             throw new DomainException("El nombre del cliente es requerido.");
 
         if (priceListId.HasValue && priceListId.Value.Value == Guid.Empty)
-            throw new DomainException("La lista de precios del cliente es inválida.");
+            throw new DomainException("La lista de precios del cliente es invalida.");
+
+        EnsureTaxCondition(taxCondition);
 
         return new Customer(
             CustomerId.New(),
@@ -56,7 +70,9 @@ public sealed class Customer
             name.Trim(),
             contact,
             address,
-            priceListId);
+            priceListId,
+            zone,
+            taxCondition);
     }
 
     public void AssignPriceList(PriceListId priceListId)
@@ -82,11 +98,28 @@ public sealed class Customer
         Address = address;
     }
 
-    public void Deactivate()
+    public void UpdateCommercialInfo(string? zone, TaxCondition taxCondition)
+    {
+        EnsureActive();
+        EnsureTaxCondition(taxCondition);
+
+        Zone = NormalizeOptional(zone, 100, "La zona no puede superar 100 caracteres.");
+        TaxCondition = taxCondition;
+    }
+
+    public void Deactivate(
+        UserId deactivatedByUserId,
+        DateTime deactivatedAtUtc,
+        string reason)
     {
         if (Status == CustomerStatus.Inactive)
             throw new DomainException("El cliente ya se encuentra inactivo.");
 
+        EnsureDeactivation(deactivatedByUserId, deactivatedAtUtc, reason);
+
+        DeactivatedByUserId = deactivatedByUserId;
+        DeactivatedAtUtc = deactivatedAtUtc;
+        DeactivationReason = reason.Trim();
         Status = CustomerStatus.Inactive;
     }
 
@@ -102,5 +135,45 @@ public sealed class Customer
     {
         if (Status != CustomerStatus.Active)
             throw new DomainException("El cliente se encuentra inactivo.");
+    }
+
+    private static void EnsureTaxCondition(TaxCondition taxCondition)
+    {
+        if (!Enum.IsDefined(taxCondition))
+            throw new DomainException("La condicion fiscal del cliente es invalida.");
+    }
+
+    private static void EnsureDeactivation(
+        UserId userId,
+        DateTime occurredAtUtc,
+        string reason)
+    {
+        if (userId.Value == Guid.Empty)
+            throw new DomainException("El usuario responsable es requerido.");
+
+        if (occurredAtUtc.Kind != DateTimeKind.Utc)
+            throw new DomainException("La fecha de inactivacion debe estar expresada en UTC.");
+
+        if (string.IsNullOrWhiteSpace(reason))
+            throw new DomainException("El motivo de inactivacion es requerido.");
+
+        if (reason.Trim().Length > 500)
+            throw new DomainException("El motivo de inactivacion no puede superar 500 caracteres.");
+    }
+
+    private static string? NormalizeOptional(
+        string? value,
+        int maxLength,
+        string errorMessage)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        var normalized = value.Trim();
+
+        if (normalized.Length > maxLength)
+            throw new DomainException(errorMessage);
+
+        return normalized;
     }
 }

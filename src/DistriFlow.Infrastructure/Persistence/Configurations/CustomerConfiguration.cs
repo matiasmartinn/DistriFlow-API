@@ -2,6 +2,7 @@ using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.Customers;
 using DistriFlow.Domain.Distributors;
 using DistriFlow.Domain.PriceLists;
+using DistriFlow.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -42,8 +43,38 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
             .HasConversion<string>()
             .HasMaxLength(30);
 
+        builder.Property(customer => customer.Zone)
+            .IsRequired(false)
+            .HasMaxLength(100);
+
+        builder.Property(customer => customer.TaxCondition)
+            .IsRequired()
+            .HasConversion<string>()
+            .HasMaxLength(50);
+
+        builder.Property(customer => customer.DeactivatedAtUtc)
+            .IsRequired(false);
+
+        builder.Property(customer => customer.DeactivatedByUserId)
+            .IsRequired(false)
+            .HasConversion(
+                id => id!.Value.Value,
+                value => UserId.From(value));
+
+        builder.Property(customer => customer.DeactivationReason)
+            .IsRequired(false)
+            .HasMaxLength(500);
+
         builder.HasIndex(customer => customer.DistributorId);
         builder.HasIndex(customer => new { customer.DistributorId, customer.PriceListId });
+        builder.HasIndex(customer => new
+            {
+                customer.DistributorId,
+                customer.Status,
+                customer.TaxCondition,
+                customer.Zone
+            })
+            .HasDatabaseName("ix_customers_distributor_status_tax_zone");
 
         builder.OwnsOne(customer => customer.Contact, contact =>
         {

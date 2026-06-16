@@ -17,4 +17,9 @@ public sealed record CreateCustomerRequest
     public CustomerAddressRequest? Address { get; init; }
 
     public Guid? PriceListId { get; init; }
+
+    public string? Zone { get; init; }
+
+    [Required]
+    public string TaxCondition { get; init; } = null!;
 }

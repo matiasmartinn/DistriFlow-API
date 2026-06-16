@@ -28,6 +28,19 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<DateTime?>("DeactivatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deactivated_at_utc");
+
+                    b.Property<Guid?>("DeactivatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deactivated_by_user_id");
+
+                    b.Property<string>("DeactivationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("deactivation_reason");
+
                     b.Property<Guid>("DistributorId")
                         .HasColumnType("uuid")
                         .HasColumnName("distributor_id");
@@ -48,6 +61,17 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
+                    b.Property<string>("TaxCondition")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("tax_condition");
+
+                    b.Property<string>("Zone")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("zone");
+
                     b.HasKey("Id")
                         .HasName("pk_customers");
 
@@ -56,6 +80,9 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("DistributorId", "PriceListId")
                         .HasDatabaseName("ix_customers_distributor_id_price_list_id");
+
+                    b.HasIndex("DistributorId", "Status", "TaxCondition", "Zone")
+                        .HasDatabaseName("ix_customers_distributor_status_tax_zone");
 
                     b.ToTable("customers", (string)null);
                 });

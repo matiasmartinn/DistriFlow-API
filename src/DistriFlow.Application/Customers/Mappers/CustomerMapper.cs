@@ -13,7 +13,12 @@ internal static class CustomerMapper
             customer.Contact.Email.Value,
             customer.Contact.Phone.Value,
             customer.PriceListId?.Value,
+            customer.Zone,
+            customer.TaxCondition.ToString(),
             customer.Status.ToString(),
+            customer.DeactivatedAtUtc,
+            customer.DeactivatedByUserId?.Value,
+            customer.DeactivationReason,
             customer.Address?.Street,
             customer.Address?.CityId,
             customer.Address?.ZipCode);
