@@ -728,16 +728,35 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("product_id");
 
+                            b1.Property<decimal>("AppliedUnitPrice")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("numeric(18,2)")
+                                .HasColumnName("applied_unit_price");
+
+                            b1.Property<Guid?>("PriceListId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("price_list_id");
+
+                            b1.Property<int?>("PriceListVersion")
+                                .HasColumnType("integer")
+                                .HasColumnName("price_list_version");
+
+                            b1.Property<string>("PriceOrigin")
+                                .IsRequired()
+                                .HasMaxLength(30)
+                                .HasColumnType("character varying(30)")
+                                .HasColumnName("price_origin");
+
                             b1.Property<string>("ProductDescription")
                                 .IsRequired()
                                 .HasMaxLength(200)
                                 .HasColumnType("character varying(200)")
                                 .HasColumnName("product_description");
 
-                            b1.Property<decimal>("UnitPrice")
+                            b1.Property<decimal>("SourceUnitPrice")
                                 .HasPrecision(18, 2)
                                 .HasColumnType("numeric(18,2)")
-                                .HasColumnName("unit_price");
+                                .HasColumnName("source_unit_price");
 
                             b1.HasKey("OrderId", "ProductId")
                                 .HasName("pk_order_lines");

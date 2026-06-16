@@ -5,5 +5,9 @@ public sealed record OrderLineDto(
     string ProductDescription,
     decimal Amount,
     string SaleUnit,
-    decimal UnitPrice,
+    Guid? PriceListId,
+    int? PriceListVersion,
+    decimal SourceUnitPrice,
+    decimal AppliedUnitPrice,
+    string PriceOrigin,
     decimal Subtotal);

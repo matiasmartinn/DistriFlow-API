@@ -2,6 +2,7 @@ using DistriFlow.Domain.Common.Errors;
 using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.Customers;
 using DistriFlow.Domain.Distributors;
+using DistriFlow.Domain.PriceLists;
 using DistriFlow.Domain.Products;
 using DistriFlow.Domain.Users;
 
@@ -92,7 +93,11 @@ public sealed class Order
         ProductId productId,
         string productDescription,
         Quantity quantity,
-        Money unitPrice,
+        Money sourceUnitPrice,
+        Money appliedUnitPrice,
+        PriceOrigin priceOrigin,
+        PriceListId? priceListId,
+        int? priceListVersion,
         long expectedRowVersion)
     {
         EnsureExpectedRowVersion(expectedRowVersion);
@@ -102,7 +107,15 @@ public sealed class Order
             throw new DomainException("El producto ya fue agregado al pedido.");
 
         _orderLines.Add(
-            OrderLine.Create(productId, productDescription, quantity, unitPrice));
+            OrderLine.Create(
+                productId,
+                productDescription,
+                quantity,
+                sourceUnitPrice,
+                appliedUnitPrice,
+                priceOrigin,
+                priceListId,
+                priceListVersion));
         AdvanceRowVersion();
     }
 

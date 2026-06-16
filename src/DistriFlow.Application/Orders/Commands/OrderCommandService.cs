@@ -174,19 +174,23 @@ public sealed class OrderCommandService : IOrderCommandService
                 orderResult.Data!.CustomerId,
                 cancellationToken);
 
-            var unitPrice = await ResolvePriceAsync(
+            var price = await ResolvePriceAsync(
                 customer!,
                 product,
                 cancellationToken);
 
-            if (unitPrice.IsFailure)
-                return unitPrice.Error;
+            if (price.IsFailure)
+                return price.Error;
 
             orderResult.Data.AddLine(
                 product.Id,
                 product.Name,
                 Quantity.Create(request.Amount, product.SaleUnit),
-                unitPrice.Data!,
+                price.Data!.SourceUnitPrice,
+                price.Data.AppliedUnitPrice,
+                price.Data.PriceOrigin,
+                price.Data.PriceListId,
+                price.Data.PriceListVersion,
                 request.RowVersion);
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -657,7 +661,7 @@ public sealed class OrderCommandService : IOrderCommandService
                 "No se pueden tomar pedidos para un cliente inactivo.");
     }
 
-    private async Task<Result<Money>> ResolvePriceAsync(
+    private async Task<Result<ResolvedOrderLinePrice>> ResolvePriceAsync(
         Customer customer,
         Product product,
         CancellationToken cancellationToken)
@@ -673,7 +677,14 @@ public sealed class OrderCommandService : IOrderCommandService
             var price = priceList?.FindPrice(product.Id);
 
             if (price.HasValue)
-                return price.Value;
+            {
+                return new ResolvedOrderLinePrice(
+                    price.Value,
+                    price.Value,
+                    PriceOrigin.PriceList,
+                    priceList!.Id,
+                    priceList.Version);
+            }
         }
 
         var configuration = await _configurationRepository.GetByDistributorIdAsync(
@@ -684,7 +695,12 @@ public sealed class OrderCommandService : IOrderCommandService
             return ConfigurationNotFound();
 
         return configuration.PriceFallbackPolicy == PriceFallbackPolicy.UseLastValidPrice
-            ? product.BasePrice
+            ? new ResolvedOrderLinePrice(
+                product.BasePrice,
+                product.BasePrice,
+                PriceOrigin.LastValidPrice,
+                null,
+                null)
             : PriceNotAvailable(product.Name);
     }
 
@@ -796,4 +812,11 @@ public sealed class OrderCommandService : IOrderCommandService
     private sealed record IdempotencyContext(
         string Key,
         IdempotencyReservation Reservation);
+
+    private sealed record ResolvedOrderLinePrice(
+        Money SourceUnitPrice,
+        Money AppliedUnitPrice,
+        PriceOrigin PriceOrigin,
+        PriceListId? PriceListId,
+        int? PriceListVersion);
 }

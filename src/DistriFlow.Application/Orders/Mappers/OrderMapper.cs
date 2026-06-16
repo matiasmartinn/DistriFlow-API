@@ -81,7 +81,11 @@ public static class OrderMapper
             line.ProductDescription,
             line.Quantity.Amount,
             line.Quantity.Unit.Value,
-            line.UnitPrice.Amount,
+            line.PriceListId?.Value,
+            line.PriceListVersion,
+            line.SourceUnitPrice.Amount,
+            line.AppliedUnitPrice.Amount,
+            line.PriceOrigin.ToString(),
             line.Subtotal.Amount);
     }
 }

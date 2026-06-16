@@ -2,6 +2,7 @@ using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.Customers;
 using DistriFlow.Domain.Distributors;
 using DistriFlow.Domain.Orders;
+using DistriFlow.Domain.PriceLists;
 using DistriFlow.Domain.Products;
 using DistriFlow.Domain.Users;
 using Microsoft.EntityFrameworkCore;
@@ -123,14 +124,40 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
                 .HasColumnName("product_description")
                 .HasMaxLength(200);
 
-            lines.Property(line => line.UnitPrice)
+            lines.Property(line => line.PriceListId)
+                .IsRequired(false)
+                .HasConversion(
+                    id => id!.Value.Value,
+                    value => PriceListId.From(value))
+                .HasColumnName("price_list_id");
+
+            lines.Property(line => line.PriceListVersion)
+                .IsRequired(false)
+                .HasColumnName("price_list_version");
+
+            lines.Property(line => line.SourceUnitPrice)
                 .IsRequired()
                 .HasConversion(
                     price => price.Amount,
                     value => Money.Create(value))
-                .HasColumnName("unit_price")
+                .HasColumnName("source_unit_price")
                 .HasPrecision(18, 2);
 
+            lines.Property(line => line.AppliedUnitPrice)
+                .IsRequired()
+                .HasConversion(
+                    price => price.Amount,
+                    value => Money.Create(value))
+                .HasColumnName("applied_unit_price")
+                .HasPrecision(18, 2);
+
+            lines.Property(line => line.PriceOrigin)
+                .IsRequired()
+                .HasConversion<string>()
+                .HasColumnName("price_origin")
+                .HasMaxLength(30);
+
+            lines.Ignore(line => line.UnitPrice);
             lines.Ignore(line => line.Subtotal);
 
             lines.OwnsOne(line => line.Quantity, quantity =>
