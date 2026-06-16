@@ -9,8 +9,17 @@ internal static class PriceListMapper
     {
         return new PriceListDto(
             priceList.Id.Value,
+            priceList.SeriesId.Value,
             priceList.Name,
             priceList.Status.ToString(),
+            priceList.Version,
+            priceList.ValidFromUtc,
+            priceList.ValidUntilUtc,
+            priceList.ActivatedAtUtc,
+            priceList.DeactivatedAtUtc,
+            priceList.CreatedByUserId.Value,
+            priceList.UpdatedByUserId.Value,
+            priceList.RowVersion,
             priceList.ProductPrices
                 .Select(productPrice => new ProductPriceDto(
                     productPrice.ProductId.Value,

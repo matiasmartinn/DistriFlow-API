@@ -2,6 +2,7 @@ namespace DistriFlow.Domain.PriceLists;
 
 public enum PriceListStatus
 {
-    Active = 1,
-    Inactive = 2
+    Draft = 1,
+    Active = 2,
+    Inactive = 3
 }

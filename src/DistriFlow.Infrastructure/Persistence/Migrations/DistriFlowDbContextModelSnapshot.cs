@@ -272,6 +272,18 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<DateTime?>("ActivatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("activated_at_utc");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<DateTime?>("DeactivatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deactivated_at_utc");
+
                     b.Property<Guid>("DistributorId")
                         .HasColumnType("uuid")
                         .HasColumnName("distributor_id");
@@ -282,17 +294,49 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("name");
 
+                    b.Property<long>("RowVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint")
+                        .HasColumnName("row_version");
+
+                    b.Property<Guid>("SeriesId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("series_id");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
+                    b.Property<Guid>("UpdatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_user_id");
+
+                    b.Property<DateTime?>("ValidFromUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("valid_from_utc");
+
+                    b.Property<DateTime?>("ValidUntilUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("valid_until_utc");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
                     b.HasKey("Id")
                         .HasName("pk_price_lists");
 
                     b.HasIndex("DistributorId")
                         .HasDatabaseName("ix_price_lists_distributor_id");
+
+                    b.HasIndex("DistributorId", "SeriesId", "Version")
+                        .IsUnique()
+                        .HasDatabaseName("ix_price_lists_distributor_id_series_id_version");
+
+                    b.HasIndex("DistributorId", "SeriesId", "Status", "ValidFromUtc", "ValidUntilUtc")
+                        .HasDatabaseName("ix_price_lists_effective_version");
 
                     b.ToTable("price_lists", (string)null);
                 });

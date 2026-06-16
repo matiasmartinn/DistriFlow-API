@@ -13,8 +13,43 @@ public interface IPriceListRepository
         DistributorId distributorId,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<PriceList>> GetActiveAsync(
+    Task<IReadOnlyList<PriceList>> GetEffectiveAsync(
         DistributorId distributorId,
+        DateTime effectiveAtUtc,
+        CancellationToken cancellationToken = default);
+
+    Task<PriceList?> GetEffectiveBySeriesIdAsync(
+        DistributorId distributorId,
+        PriceListId seriesId,
+        DateTime effectiveAtUtc,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PriceList>> GetVersionsAsync(
+        DistributorId distributorId,
+        PriceListId seriesId,
+        CancellationToken cancellationToken = default);
+
+    Task<PriceListId?> GetSeriesIdAsync(
+        DistributorId distributorId,
+        PriceListId id,
+        CancellationToken cancellationToken = default);
+
+    Task<int> GetNextVersionNumberAsync(
+        DistributorId distributorId,
+        PriceListId seriesId,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> HasOverlappingActiveVersionAsync(
+        DistributorId distributorId,
+        PriceListId seriesId,
+        PriceListId excludedId,
+        DateTime validFromUtc,
+        DateTime? validUntilUtc,
+        CancellationToken cancellationToken = default);
+
+    Task LockSeriesAsync(
+        DistributorId distributorId,
+        PriceListId seriesId,
         CancellationToken cancellationToken = default);
 
     Task AddAsync(

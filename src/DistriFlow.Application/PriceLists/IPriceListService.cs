@@ -18,6 +18,14 @@ public interface IPriceListService
         Guid id,
         CancellationToken cancellationToken = default);
 
+    Task<Result<IReadOnlyList<PriceListDto>>> GetVersionsAsync(
+        Guid id,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<PriceListDto>> CreateVersionAsync(
+        Guid id,
+        CancellationToken cancellationToken = default);
+
     Task<Result> RenameAsync(
         Guid id,
         RenamePriceListRequest request,
@@ -34,11 +42,13 @@ public interface IPriceListService
         Guid productId,
         CancellationToken cancellationToken = default);
 
-    Task<Result> DeactivateAsync(
+    Task<Result<PriceListDto>> ActivateAsync(
         Guid id,
+        ActivatePriceListRequest request,
+        string? idempotencyKey,
         CancellationToken cancellationToken = default);
 
-    Task<Result> ReactivateAsync(
+    Task<Result> DeactivateAsync(
         Guid id,
         CancellationToken cancellationToken = default);
 }

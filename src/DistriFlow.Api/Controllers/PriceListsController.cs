@@ -45,6 +45,24 @@ public sealed class PriceListsController : BaseController
         return HandleResult(await _service.GetByIdAsync(id, cancellationToken));
     }
 
+    [HttpGet("{id:guid}/versions")]
+    public async Task<IActionResult> GetVersions(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken)
+    {
+        return HandleResult(await _service.GetVersionsAsync(id, cancellationToken));
+    }
+
+    [HttpPost("{id:guid}/versions")]
+    public async Task<IActionResult> CreateVersion(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken)
+    {
+        return HandleResult(
+            await _service.CreateVersionAsync(id, cancellationToken),
+            StatusCodes.Status201Created);
+    }
+
     [HttpPut("{id:guid}/name")]
     public async Task<IActionResult> Rename(
         [FromRoute] Guid id,
@@ -80,6 +98,21 @@ public sealed class PriceListsController : BaseController
             await _service.RemoveProductAsync(id, productId, cancellationToken));
     }
 
+    [HttpPatch("{id:guid}/activate")]
+    public async Task<IActionResult> Activate(
+        [FromRoute] Guid id,
+        [FromBody] ActivatePriceListRequest request,
+        [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
+        CancellationToken cancellationToken)
+    {
+        return HandleResult(
+            await _service.ActivateAsync(
+                id,
+                request,
+                idempotencyKey,
+                cancellationToken));
+    }
+
     [HttpPatch("{id:guid}/deactivate")]
     public async Task<IActionResult> Deactivate(
         [FromRoute] Guid id,
@@ -87,14 +120,5 @@ public sealed class PriceListsController : BaseController
     {
         return HandleResult(
             await _service.DeactivateAsync(id, cancellationToken));
-    }
-
-    [HttpPatch("{id:guid}/reactivate")]
-    public async Task<IActionResult> Reactivate(
-        [FromRoute] Guid id,
-        CancellationToken cancellationToken)
-    {
-        return HandleResult(
-            await _service.ReactivateAsync(id, cancellationToken));
     }
 }

@@ -203,12 +203,13 @@ public sealed class CustomerService : ICustomerService
                     product,
                     cancellationToken);
 
-            var priceList = await _priceListRepository.GetByIdAsync(
+            var priceList = await _priceListRepository.GetEffectiveBySeriesIdAsync(
                 _currentUserContext.DistributorId,
                 customer.PriceListId.Value,
+                DateTime.UtcNow,
                 cancellationToken);
 
-            if (priceList is null || priceList.Status != PriceListStatus.Active)
+            if (priceList is null)
                 return await ResolveFallbackPriceAsync(
                     customer,
                     product,
@@ -275,14 +276,24 @@ public sealed class CustomerService : ICustomerService
             return Result<PriceListId?>.Success(null);
 
         var priceListId = PriceListId.From(id.Value);
-        var priceList = await _priceListRepository.GetByIdAsync(
+        var effectiveAtUtc = DateTime.UtcNow;
+        var priceList = await _priceListRepository.GetEffectiveBySeriesIdAsync(
             _currentUserContext.DistributorId,
             priceListId,
+            effectiveAtUtc,
             cancellationToken);
 
-        return priceList is null || priceList.Status != PriceListStatus.Active
+        if (priceList is null)
+        {
+            priceList = await _priceListRepository.GetByIdAsync(
+                _currentUserContext.DistributorId,
+                priceListId,
+                cancellationToken);
+        }
+
+        return priceList is null || !priceList.IsEffectiveAt(effectiveAtUtc)
             ? Result<PriceListId?>.Failure(PriceListNotFound())
-            : Result<PriceListId?>.Success(priceListId);
+            : Result<PriceListId?>.Success(priceList.SeriesId);
     }
 
     private static Address? CreateAddress(CustomerAddressRequest? request)

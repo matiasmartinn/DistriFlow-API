@@ -2,6 +2,7 @@ using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.Distributors;
 using DistriFlow.Domain.PriceLists;
 using DistriFlow.Domain.Products;
+using DistriFlow.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -27,6 +28,12 @@ public sealed class PriceListConfiguration : IEntityTypeConfiguration<PriceList>
                 id => id.Value,
                 value => DistributorId.From(value));
 
+        builder.Property(priceList => priceList.SeriesId)
+            .IsRequired()
+            .HasConversion(
+                id => id.Value,
+                value => PriceListId.From(value));
+
         builder.Property(priceList => priceList.Name)
             .IsRequired()
             .HasMaxLength(200);
@@ -36,7 +43,56 @@ public sealed class PriceListConfiguration : IEntityTypeConfiguration<PriceList>
             .HasConversion<string>()
             .HasMaxLength(30);
 
+        builder.Property(priceList => priceList.Version)
+            .IsRequired();
+
+        builder.Property(priceList => priceList.ValidFromUtc)
+            .IsRequired(false);
+
+        builder.Property(priceList => priceList.ValidUntilUtc)
+            .IsRequired(false);
+
+        builder.Property(priceList => priceList.ActivatedAtUtc)
+            .IsRequired(false);
+
+        builder.Property(priceList => priceList.DeactivatedAtUtc)
+            .IsRequired(false);
+
+        builder.Property(priceList => priceList.CreatedByUserId)
+            .IsRequired()
+            .HasConversion(
+                id => id.Value,
+                value => UserId.From(value));
+
+        builder.Property(priceList => priceList.UpdatedByUserId)
+            .IsRequired()
+            .HasConversion(
+                id => id.Value,
+                value => UserId.From(value));
+
+        builder.Property(priceList => priceList.RowVersion)
+            .IsRequired()
+            .IsConcurrencyToken();
+
         builder.HasIndex(priceList => priceList.DistributorId);
+        builder.HasIndex(priceList => new
+            {
+                priceList.DistributorId,
+                priceList.SeriesId,
+                priceList.Version
+            })
+            .IsUnique()
+            .HasDatabaseName(
+                "ix_price_lists_distributor_id_series_id_version");
+        builder.HasIndex(priceList => new
+            {
+                priceList.DistributorId,
+                priceList.SeriesId,
+                priceList.Status,
+                priceList.ValidFromUtc,
+                priceList.ValidUntilUtc
+            })
+            .HasDatabaseName("ix_price_lists_effective_version");
 
         builder.OwnsMany(priceList => priceList.ProductPrices, productPrices =>
         {

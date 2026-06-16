@@ -664,14 +664,13 @@ public sealed class OrderCommandService : IOrderCommandService
     {
         if (customer.PriceListId.HasValue)
         {
-            var priceList = await _priceListRepository.GetByIdAsync(
+            var priceList = await _priceListRepository.GetEffectiveBySeriesIdAsync(
                 _currentUserContext.DistributorId,
                 customer.PriceListId.Value,
+                DateTime.UtcNow,
                 cancellationToken);
 
-            var price = priceList?.Status == PriceListStatus.Active
-                ? priceList.FindPrice(product.Id)
-                : null;
+            var price = priceList?.FindPrice(product.Id);
 
             if (price.HasValue)
                 return price.Value;
