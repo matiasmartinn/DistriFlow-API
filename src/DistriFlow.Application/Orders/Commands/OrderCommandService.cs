@@ -66,8 +66,8 @@ public sealed class OrderCommandService : IOrderCommandService
     {
         try
         {
-            if (_currentUserContext.Role != Role.SalesRep)
-                return SalesRepRequired();
+            if (!CanOperateOrders())
+                return OrderOperatorRequired();
 
             if (!TryParseOrigin(request.Origin, out var origin))
                 return InvalidOrderOrigin();
@@ -434,8 +434,7 @@ public sealed class OrderCommandService : IOrderCommandService
                 OrderId.From(orderId),
                 cancellationToken);
 
-            if (order is null
-                || order.SalesRepId != _currentUserContext.UserId)
+            if (order is null || !CanOperateOrder(order))
             {
                 await transaction.RollbackAsync(cancellationToken);
                 return OrderNotFound();
@@ -521,8 +520,7 @@ public sealed class OrderCommandService : IOrderCommandService
             OrderId.From(orderId),
             cancellationToken);
 
-        if (order is null
-            || order.SalesRepId != _currentUserContext.UserId)
+        if (order is null || !CanOperateOrder(order))
             return OrderNotFound();
 
         var availabilityError = await GetOrderingAvailabilityErrorAsync(
@@ -622,10 +620,22 @@ public sealed class OrderCommandService : IOrderCommandService
             OrderId.From(reservation.ResourceId.Value),
             cancellationToken);
 
-        if (order is null || order.SalesRepId != _currentUserContext.UserId)
+        if (order is null || !CanOperateOrder(order))
             return IdempotencyConflict();
 
         return order.ToDto();
+    }
+
+    private bool CanOperateOrder(Order order)
+    {
+        return _currentUserContext.Role == Role.Administrator
+            || order.SalesRepId == _currentUserContext.UserId;
+    }
+
+    private bool CanOperateOrders()
+    {
+        return _currentUserContext.Role == Role.Administrator
+            || _currentUserContext.Role == Role.SalesRep;
     }
 
     private async Task<Error?> GetOrderingAvailabilityErrorAsync(
@@ -715,11 +725,11 @@ public sealed class OrderCommandService : IOrderCommandService
         return Error.NotFound("order.not_found", "Pedido no encontrado.");
     }
 
-    private static Error SalesRepRequired()
+    private static Error OrderOperatorRequired()
     {
         return Error.Forbidden(
-            "order.sales_rep_required",
-            "Solo un preventista puede operar pedidos.");
+            "order.operator_required",
+            "Solo un administrador o preventista puede operar pedidos.");
     }
 
     private static Error OrderLineNotFound()

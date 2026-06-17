@@ -22,7 +22,7 @@ public sealed class OrdersController : BaseController
     }
 
     [HttpPost]
-    [Authorize(Roles = "SalesRep")]
+    [Authorize(Roles = "Administrator,SalesRep")]
     public async Task<IActionResult> Start(
         [FromBody] StartOrderRequest request,
         [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
@@ -55,7 +55,7 @@ public sealed class OrdersController : BaseController
     }
 
     [HttpPost("{id:guid}/lines")]
-    [Authorize(Roles = "SalesRep")]
+    [Authorize(Roles = "Administrator,SalesRep")]
     public async Task<IActionResult> AddLine(
         [FromRoute] Guid id,
         [FromBody] AddOrderLineRequest request,
@@ -66,7 +66,7 @@ public sealed class OrdersController : BaseController
     }
 
     [HttpPut("{id:guid}/lines/{productId:guid}")]
-    [Authorize(Roles = "SalesRep")]
+    [Authorize(Roles = "Administrator,SalesRep")]
     public async Task<IActionResult> ChangeLineQuantity(
         [FromRoute] Guid id,
         [FromRoute] Guid productId,
@@ -82,7 +82,7 @@ public sealed class OrdersController : BaseController
     }
 
     [HttpDelete("{id:guid}/lines/{productId:guid}")]
-    [Authorize(Roles = "SalesRep")]
+    [Authorize(Roles = "Administrator,SalesRep")]
     public async Task<IActionResult> RemoveLine(
         [FromRoute] Guid id,
         [FromRoute] Guid productId,
@@ -98,7 +98,7 @@ public sealed class OrdersController : BaseController
     }
 
     [HttpPatch("{id:guid}/confirm")]
-    [Authorize(Roles = "SalesRep")]
+    [Authorize(Roles = "Administrator,SalesRep")]
     public async Task<IActionResult> Confirm(
         [FromRoute] Guid id,
         [FromBody] ConfirmOrderRequest request,
@@ -114,7 +114,7 @@ public sealed class OrdersController : BaseController
     }
 
     [HttpPatch("{id:guid}/cancel")]
-    [Authorize(Roles = "SalesRep")]
+    [Authorize(Roles = "Administrator,SalesRep")]
     public async Task<IActionResult> Cancel(
         [FromRoute] Guid id,
         [FromBody] CancelOrderRequest request,
