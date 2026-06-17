@@ -12,6 +12,17 @@ artifacts/
 # Local configuration
 **/appsettings.Development.json
 **/appsettings.Local.json
+.env
+.env.*
+!.env.example
+
+# Internal context and agent documentation
+AGENTS.md
+AGENTS*.md
+docs/
+prompts/
+audits/
+analysis/
 
 # Local databases
 *.db
@@ -21,4 +32,3 @@ artifacts/
 **/TestResults/
 **/coverage/
 coverage.*
-
