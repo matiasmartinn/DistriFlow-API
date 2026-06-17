@@ -45,7 +45,7 @@ Es un **SaaS multi-distribuidora**: cada distribuidora es un tenant aislado. Tod
    El administrador (o el preventista) registra los comercios a los que se vende, con su contacto, dirección y lista de precios asignada.
 
 4. **Toma de pedido (flujo core)**
-   El preventista, frente al comercio, crea un pedido para ese cliente, agrega líneas (producto + cantidad). El precio de cada línea sale de la lista de precios del cliente. Mientras está en borrador puede modificarlo. Al terminar, lo confirma.
+   El preventista o el administrador de la distribuidora crea un pedido para ese cliente, agrega líneas (producto + cantidad). El precio de cada línea sale de la lista de precios del cliente. Mientras está en borrador puede modificarlo. Al terminar, lo confirma.
 
 5. **Confirmación del pedido**
    El pedido pasa de borrador a confirmado. Queda fijado (snapshot de precios y cantidades), entra al histórico del cliente y descuenta stock.
@@ -136,13 +136,13 @@ Estados:
 
 Reglas de negocio:
 * Email de usuario único a nivel sistema para permitir login sin identificar la distribuidora.
-* El rol determina qué puede hacer (preventista: tomar pedidos; administrador: catálogo, precios, stock, usuarios).
+* El rol determina qué puede hacer (preventista: tomar pedidos propios; administrador: catálogo, precios, stock, usuarios y pedidos de la distribuidora).
 
 Operaciones conceptuales:
 * `crear`, `cambiarRol`, `desactivar`.
 
 Relaciones con otros aggregates:
-* Un `Pedido` referencia al `Usuario` (preventista) que lo tomó, por Id.
+* Un `Pedido` referencia al `Usuario` que lo tomó o creó, por Id.
 
 No incluir todavía:
 * Autenticación, tokens, invitaciones por email, recuperación de contraseña (son detalle de aplicación/infra, no dominio).
@@ -312,13 +312,13 @@ No incluir todavía:
 ### Stock
 
 Responsabilidad:
-* Conocer la disponibilidad de cada producto y proteger la invariante de no quedar en negativo.
+* Conocer la disponibilidad de cada producto y aplicar la política de stock de la distribuidora.
 
 Aggregate root:
 * `Stock` (uno por producto dentro de la distribuidora).
 
 Entidades internas:
-* En baseline ninguna. En v1 se persiste solo el saldo actual; no hay movimientos/historial de stock.
+* En baseline ninguna. En v1 se persiste saldo actual y ledger de movimientos.
 
 Value Objects:
 * `Cantidad`.
@@ -330,8 +330,9 @@ Estados:
 * No tiene estados explícitos en baseline (la cantidad es el dato relevante).
 
 Reglas de negocio:
-* La cantidad disponible nunca es negativa.
-* Descontar más de lo disponible es inválido.
+* Con la política predeterminada `RequireAvailableStock`, la cantidad disponible nunca es negativa.
+* `AllowNegativeStock` puede habilitar stock negativo por decisión explícita de la distribuidora.
+* Descontar más de lo disponible es inválido cuando rige `RequireAvailableStock`.
 
 Operaciones conceptuales:
 * `ingresar(cantidad)`, `descontar(cantidad)`, `ajustar(cantidadNueva)`.
@@ -341,7 +342,7 @@ Relaciones con otros aggregates:
 * Es afectado por la confirmación/entrega de `Pedido` (coordinado en la capa de aplicación).
 
 No incluir todavía:
-* Múltiples depósitos/ubicaciones, lotes, vencimientos, reservas, historial de movimientos detallado.
+* Múltiples depósitos/ubicaciones, lotes, vencimientos y reservas.
 
 > Decisión vigente: `Stock` es un aggregate separado de `Producto`.
 
@@ -355,7 +356,7 @@ Lo mínimo para que el producto tenga sentido (toma de pedidos con precio correc
 2. **Producto** con precio base, unidad de venta y estado activo/discontinuado.
 3. **ListaDePrecios** reutilizable y **Cliente** con lista asignada (con fallback a precio base).
 4. **Pedido** rico: borrador → confirmado → cancelado, líneas con snapshot de precio, total calculado, invariantes.
-5. **Stock** con disponibilidad y descuento al confirmar, invariante de no-negativo.
+5. **Stock** con disponibilidad y descuento al confirmar; por defecto no permite negativo, salvo configuración explícita `AllowNegativeStock`.
 6. **Histórico de pedidos por cliente** (consulta de lectura, sin reglas nuevas).
 
 Esto cubre las 4 funcionalidades core del MVP (toma de pedidos, stock real, listas de precio por cliente, histórico por cliente) sin agregar nada más.

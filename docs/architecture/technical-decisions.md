@@ -1,5 +1,6 @@
 - Stock se descuenta al confirmar pedido.
-- No se permite stock negativo.
+- La política predeterminada `RequireAvailableStock` no permite stock negativo.
+- `AllowNegativeStock` es una opción válida configurable por distribuidora.
 - Si el producto no está en la lista del cliente, se usa precio base.
 - ListaDePrecios es reutilizable.
 - Stock es aggregate separado de Producto.
@@ -12,4 +13,4 @@
 - No hay logística.
 - Cada producto tiene una única unidad de venta; las cantidades son decimales y no hay conversiones entre unidades en v1.
 - Address guarda Street, CityId y ZipCode opcional; Province se deriva de City.
-- Stock persiste solo el saldo actual; no hay movimientos de stock en v1.
+- Stock persiste saldo actual y ledger de movimientos en v1.

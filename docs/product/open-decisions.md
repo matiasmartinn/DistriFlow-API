@@ -14,7 +14,7 @@
 | D-02 | Modelo de precios por cliente | **PriceList reutilizable** asignada a varios clientes (no precio individual). |
 | D-03 | Fallback de precio | Si el producto no está en la lista del cliente, se usa el **precio base**. |
 | D-04 | Stock vs Producto | `Stock` es **aggregate separado** de `Product`. |
-| D-05 | Stock negativo | **No se permite** stock negativo. |
+| D-05 | Stock negativo | La política predeterminada `RequireAvailableStock` no permite stock negativo. `AllowNegativeStock` es una opción configurable por distribuidora. |
 | D-06 | Cliente como usuario | El cliente-comercio **no es usuario** del sistema en el baseline. |
 | D-07 | Offline | **No hay offline** en esta etapa. |
 | D-08 | Facturación | **No hay facturación** ni comprobantes. |
@@ -24,7 +24,7 @@
 | D-12 | Logística | **No hay** logística (entrega, devoluciones, entregas parciales). |
 | D-13 | Unidad de venta | Cada producto declara **una única `SaleUnit`**. Las cantidades usan decimal y no hay conversión unidad↔caja/bulto en v1. |
 | D-14 | Dirección | `Address` guarda `Street`, `CityId` y `ZipCode` opcional. La provincia se obtiene desde la ciudad. |
-| D-15 | Histórico de stock | En v1 se persiste **solo el saldo actual**. No se guardan movimientos de stock. |
+| D-15 | Histórico de stock | En v1 se persiste saldo actual y ledger de movimientos de stock para entradas, ajustes, confirmación y cancelación de pedidos. |
 
 > Estas decisiones acotan el alcance. No implementar nada que las contradiga sin pedido explícito.
 

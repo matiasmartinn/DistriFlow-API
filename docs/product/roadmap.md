@@ -10,9 +10,8 @@
 - Catálogo: Product (precio base, unidad, estado).
 - Precios: PriceList reutilizable + asignación a Customer (fallback a precio base).
 - Order CORE: Draft → Confirmed → Cancelled, snapshot de precios, total calculado, invariantes.
-- Stock con descuento al confirmar e invariante de no-negativo.
+- Stock con descuento al confirmar; por defecto no permite negativo (`RequireAvailableStock`) y puede habilitar `AllowNegativeStock` por distribuidora.
 - Histórico de pedidos por cliente.
-- Catálogos geográficos (Province / City).
 
 Criterio de salida: ver "MVP terminado" en [mvp.md](mvp.md).
 
@@ -23,6 +22,7 @@ Mejoras de alto valor para distribuidoras, sin cambiar el core:
 - **Export CSV** simple de pedidos/histórico.
 - Filtros y paginación en consultas (pedidos, productos, clientes).
 - Reportes básicos (ventas por período, productos más vendidos).
+- Catálogos geográficos (Province / City) para normalizar direcciones.
 
 ## Fase 2 — Movilidad y campo
 - **Sincronización offline** del preventista. Riesgo técnico alto: condiciona identidad de pedidos
@@ -40,6 +40,7 @@ Mejoras de alto valor para distribuidoras, sin cambiar el core:
 - Facturación / comprobantes / AFIP.
 - Descuentos, promociones, precios con vigencia, multimoneda.
 - Cliente-comercio como actor (autoservicio de pedidos) — cambia el modelo de identidad (ver `open-decisions.md` #8).
+- Auditoría formal centralizada (`AuditEvent`) para acciones sensibles.
 
 ---
 

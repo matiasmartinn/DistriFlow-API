@@ -2,7 +2,7 @@
 
 > Épicas e historias priorizadas para construir la v1. Orden pensado para respetar **dependencias**:
 > cada épica se apoya en las anteriores. Referencias `RF-xx` → `requirements.md`.
-> Prioridad: **P0** = imprescindible para el MVP. Todo lo listado acá es P0 salvo aclaración.
+> Prioridad: **P0** = imprescindible para el MVP. Todo lo listado acá es P0 salvo aclaración o secciones marcadas como alcance futuro.
 
 ## Convención de historia
 `Como <rol> quiero <objetivo> para <beneficio>` + criterios de aceptación clave.
@@ -20,8 +20,8 @@ Base compartida antes de las verticales de negocio.
 
 > Dependencia: todas las épicas siguientes dependen de EPIC-0.
 
-## EPIC-1 — Catálogos geográficos (golden path de catálogo)
-Vertical más simple; fija el patrón de catálogo read-only.
+## EPIC-1 — Catálogos geográficos (alcance futuro)
+Vertical simple para normalizar direcciones; no bloquea el cierre del MVP operativo.
 - **H-1.1** `Province`: GET /api/provinces y GET /api/provinces/{id:int} (RF-27).
 - **H-1.2** `City`: GET /api/cities/by-province/{provinceId:int} (RF-28).
 - **H-1.3** Seed de provincias/ciudades (datos estáticos / CSV).
@@ -50,7 +50,7 @@ Vertical más simple; fija el patrón de catálogo read-only.
 
 ## EPIC-6 — Pedidos (Order) — CORE
 Aggregate más rico; usa command/query separation (`cqrs-style.md`).
-- **H-6.1** Iniciar `Order` en `Draft` para un cliente + preventista (RF-16).
+- **H-6.1** Iniciar `Order` en `Draft` para un cliente. Puede operarlo `Administrator` o `SalesRep` de la misma distribuidora (RF-16).
 - **H-6.2** Agregar línea con snapshot de precio desde la lista del cliente (RF-17).
 - **H-6.3** Cambiar cantidad y quitar líneas en `Draft` (RF-18).
 - **H-6.4** Confirmar pedido (≥ 1 línea, recalcula total, descuenta stock) (RF-19, RF-21).
@@ -62,7 +62,7 @@ Aggregate más rico; usa command/query separation (`cqrs-style.md`).
 ## EPIC-7 — Stock
 - **H-7.1** Ingresar mercadería a un producto (RF-22).
 - **H-7.2** Ajustar stock a cantidad nueva (RF-23).
-- **H-7.3** Descontar al confirmar pedido; invariante de no-negativo (RF-24).
+- **H-7.3** Descontar al confirmar pedido; `RequireAvailableStock` impide negativo por defecto y `AllowNegativeStock` puede habilitarlo por distribuidora (RF-24).
 - **H-7.4** Consultar disponibilidad por producto (RF-25).
 
 ## EPIC-8 — Histórico
@@ -71,5 +71,6 @@ Aggregate más rico; usa command/query separation (`cqrs-style.md`).
 ---
 
 ## Fuera del backlog v1
-Cuenta corriente, offline, WhatsApp, ERP, facturación, logística, reportes avanzados.
+Cuenta corriente, offline, WhatsApp, ERP, facturación, logística, reportes avanzados,
+catálogos geográficos y auditoría formal centralizada.
 Ver [roadmap.md](roadmap.md) y [open-decisions.md](open-decisions.md).

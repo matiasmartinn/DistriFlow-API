@@ -29,7 +29,8 @@
 - **RF-15** Actualizar contacto y desactivar clientes. No se toman pedidos a un cliente inactivo.
 
 ### Pedidos (Order) — CORE
-- **RF-16** Iniciar un pedido en `Draft` para un cliente, asociado al preventista que lo toma.
+- **RF-16** Iniciar un pedido en `Draft` para un cliente. Puede operarlo un usuario `Administrator`
+  o `SalesRep` de la misma distribuidora; el pedido conserva el usuario que lo creó/tomó.
 - **RF-17** Agregar líneas (producto + cantidad > 0) solo en `Draft`; el precio unitario se fija por snapshot.
 - **RF-18** Cambiar cantidad y quitar líneas solo en `Draft`.
 - **RF-19** Confirmar el pedido (requiere ≥ 1 línea); pasa a `Confirmed` y descuenta stock.
@@ -39,13 +40,14 @@
 ### Stock
 - **RF-22** Ingresar mercadería (reposición) a un producto.
 - **RF-23** Ajustar el stock a una cantidad nueva.
-- **RF-24** Descontar stock al confirmar un pedido; nunca permitir negativo.
+- **RF-24** Descontar stock al confirmar un pedido. Con la política predeterminada
+  `RequireAvailableStock` no se permite negativo; `AllowNegativeStock` puede habilitarlo por distribuidora.
 - **RF-25** Consultar disponibilidad por producto.
 
 ### Histórico
 - **RF-26** Consultar los pedidos pasados de un cliente (lectura).
 
-### Catálogos geográficos
+### Catálogos geográficos (alcance futuro)
 - **RF-27** Listar provincias y obtener una por id.
 - **RF-28** Listar ciudades filtradas por provincia.
 

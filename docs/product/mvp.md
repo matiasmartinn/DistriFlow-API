@@ -18,6 +18,7 @@
 
 ### 3. Toma de pedidos (CORE)
 - **Order** con ciclo `Draft → Confirmed → Cancelled`.
+- `Administrator` y `SalesRep` pueden iniciar, editar, confirmar y cancelar pedidos dentro de su distribuidora.
 - Agregar/quitar líneas y cambiar cantidades **solo en Draft**.
 - Precio unitario de cada línea = **snapshot** desde la lista del cliente al momento de agregar/confirmar.
 - Total = suma de subtotales (calculado, nunca seteado a mano).
@@ -25,14 +26,13 @@
   no tomar pedidos a cliente inactivo ni distribuidora suspendida.
 
 ### 4. Stock
-- **Stock** por producto con cantidad disponible. Nunca negativo.
+- **Stock** por producto con cantidad disponible.
 - Se **descuenta al confirmar** el pedido. Operaciones: ingresar, descontar, ajustar.
+- La política predeterminada `RequireAvailableStock` impide stock negativo.
+- `AllowNegativeStock` es una opción configurable por distribuidora cuando el negocio la habilita explícitamente.
 
 ### 5. Histórico
 - Consulta de **pedidos por cliente** (solo lectura; sin reglas nuevas).
-
-### 6. Catálogos geográficos
-- **Province** y **City** para normalizar direcciones (lectura).
 
 ## Fuera de alcance (v1)
 
@@ -46,13 +46,15 @@
 - Descuentos, promociones, precios con vigencia, multimoneda.
 - Múltiples depósitos, lotes y vencimientos en stock.
 - Autenticación avanzada, invitaciones de usuario, notificaciones (detalle técnico/infra).
+- Catálogos geográficos **Province** y **City** para normalizar direcciones (lectura).
+- Auditoría formal centralizada (`AuditEvent`) para acciones sensibles.
 
 ## Criterio de "MVP terminado"
 
-Un preventista puede, para una distribuidora dada:
+Un usuario operativo (`Administrator` o `SalesRep`) puede, para una distribuidora dada:
 1. Ver el catálogo y los precios que le corresponden a un cliente.
 2. Crear un pedido en borrador, agregar líneas y confirmarlo con precios fijados.
-3. Que el stock se descuente al confirmar y nunca quede negativo.
+3. Que el stock se descuente al confirmar y no quede negativo cuando rige `RequireAvailableStock`.
 4. El administrador puede consultar el histórico de pedidos de ese cliente.
 
 Todo respetando el aislamiento por tenant.

@@ -27,8 +27,9 @@ needs to know *who* is calling and *which tenant* they belong to. The baseline m
   repository queries. Tenant-owned request bodies must not provide it (RNF-01). Public login receives
   only the user email and password; user email is globally unique. Distributor contact email is not used
   for authentication.
-- Role-based authorization gates endpoints: `SalesRep` takes orders; `Administrator` manages catalog,
-  prices, stock and users.
+- Role-based authorization gates endpoints: `Administrator` and `SalesRep` operate orders within
+  their tenant; `SalesRep` remains scoped to its own orders, while `Administrator` also manages
+  catalog, prices, stock and users.
 - **Token issuance (login)** is a thin Infrastructure/Api concern. What stays OUT of baseline (per domain):
   user invitations, password reset, email verification, refresh-token rotation.
 

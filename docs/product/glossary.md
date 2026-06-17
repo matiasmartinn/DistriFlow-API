@@ -34,8 +34,8 @@
 | Dominio (ES)    | Código (EN)     | Notas |
 |-----------------|-----------------|-------|
 | Rol             | `Role`          | Value Object. |
-| Administrador   | `Administrator` | Gestiona catálogo, precios, stock, usuarios. |
-| Preventista     | `SalesRep`      | Toma pedidos en el campo. |
+| Administrador   | `Administrator` | Gestiona catálogo, precios, stock, usuarios y puede operar pedidos de su distribuidora. |
+| Preventista     | `SalesRep`      | Toma y opera sus pedidos en el campo. |
 | Estado de pedido| `OrderStatus`   | Value Object. |
 | Borrador        | `Draft`         | Estado de `Order`. Único estado editable. |
 | Confirmado      | `Confirmed`     | Pedido fijado (snapshot de precios). |

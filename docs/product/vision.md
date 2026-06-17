@@ -13,9 +13,9 @@ Esto genera errores de precio, ventas de productos sin stock, y falta de visibil
 
 Un **SaaS multi-distribuidora** donde:
 
-- El **preventista** arma el pedido frente al comercio con **el precio correcto de ese cliente**, valida
+- El **preventista** o **administrador** arma el pedido con **el precio correcto de ese cliente**, valida
   cantidades y stock, y lo confirma. El pedido queda fijado (snapshot de precios) y entra al histórico.
-- El **administrador/dueño** mantiene catálogo, listas de precios, stock y clientes, y revisa los pedidos.
+- El **administrador/dueño** mantiene catálogo, listas de precios, stock, clientes y usuarios, y puede operar o revisar pedidos de su distribuidora.
 
 El diferencial está en que la **toma de pedidos** es rica y correcta: precio por cliente, stock real,
 e histórico por comercio. El resto del sistema existe para que ese flujo sea posible.

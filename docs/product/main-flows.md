@@ -15,7 +15,7 @@ cada **Customer** una lista (o usa precio base si no tiene). (RF-06, RF-10, RF-1
 El administrador o el preventista registra los comercios con contacto, dirección y lista de precios asignada. (RF-14)
 
 ## 4. Toma de pedido (CORE)
-El preventista, frente al comercio:
+Un `SalesRep` o `Administrator` de la distribuidora:
 1. Inicia un **Order** en `Draft` para el cliente.
 2. Agrega líneas (producto + cantidad). El **precio sale de la lista del cliente** y se fija por snapshot.
 3. Mientras está en `Draft` puede modificar líneas y cantidades.
@@ -33,7 +33,8 @@ Un pedido puede cancelarse según su estado. Si ya había descontado stock, **se
 
 ## 7. Gestión de stock
 El administrador ingresa mercadería (reposición), ajusta por diferencias y consulta disponibilidad.
-El stock se descuenta por efecto de los pedidos confirmados. Nunca queda negativo. (RF-22 a RF-25)
+El stock se descuenta por efecto de los pedidos confirmados. La política predeterminada
+`RequireAvailableStock` impide stock negativo; `AllowNegativeStock` puede habilitarlo por distribuidora. (RF-22 a RF-25)
 
 ## 8. Consulta de histórico por cliente
 Ver los pedidos pasados de un comercio (qué compra, cada cuánto, a qué precios). Es lectura, sin reglas nuevas. (RF-26)
