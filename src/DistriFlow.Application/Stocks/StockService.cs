@@ -1,6 +1,7 @@
 using DistriFlow.Application.Common.Pagination;
 using DistriFlow.Application.Common.Results;
 using DistriFlow.Application.Common.Security;
+using DistriFlow.Application.Products;
 using DistriFlow.Application.Stocks.DTOs.Requests;
 using DistriFlow.Application.Stocks.DTOs.Responses;
 using DistriFlow.Application.Stocks.Mappers;
@@ -58,7 +59,7 @@ public sealed class StockService : IStockService
                 || (_currentUserContext.Role == Role.SalesRep
                     && product.Status != ProductStatus.Active))
             {
-                return ProductNotFound();
+                return ProductErrors.NotFound();
             }
 
             var stock = await _stockRepository.GetByProductIdAsync(
@@ -85,7 +86,7 @@ public sealed class StockService : IStockService
             var product = await GetProductAsync(productId, cancellationToken);
 
             if (product is null)
-                return ProductNotFound();
+                return ProductErrors.NotFound();
 
             await using var transaction = await _unitOfWork.BeginTransactionAsync(
                 cancellationToken);
@@ -110,7 +111,7 @@ public sealed class StockService : IStockService
                 cancellationToken);
 
             if (change is null)
-                return StockChangeConflict();
+                return StockErrors.ChangeConflict();
 
             if (request.IsInitialLoad && change.PreviousQuantity != 0)
             {
@@ -143,7 +144,7 @@ public sealed class StockService : IStockService
         }
         catch (ConcurrencyException)
         {
-            return StockChangeConflict();
+            return StockErrors.ChangeConflict();
         }
         catch (DomainException exception)
         {
@@ -162,7 +163,7 @@ public sealed class StockService : IStockService
             var product = await GetProductAsync(productId, cancellationToken);
 
             if (product is null)
-                return ProductNotFound();
+                return ProductErrors.NotFound();
 
             await using var transaction = await _unitOfWork.BeginTransactionAsync(
                 cancellationToken);
@@ -185,7 +186,7 @@ public sealed class StockService : IStockService
                 cancellationToken);
 
             if (stock is null)
-                return StockNotFound();
+                return StockErrors.NotFound();
 
             var resultingQuantity = Quantity.Create(
                 request.Amount,
@@ -207,7 +208,7 @@ public sealed class StockService : IStockService
                 cancellationToken);
 
             if (change is null)
-                return StockChangeConflict();
+                return StockErrors.ChangeConflict();
 
             var movement = StockMovement.Create(
                 _currentUserContext.DistributorId,
@@ -233,7 +234,7 @@ public sealed class StockService : IStockService
         }
         catch (ConcurrencyException)
         {
-            return StockChangeConflict();
+            return StockErrors.ChangeConflict();
         }
         catch (DomainException exception)
         {
@@ -254,7 +255,7 @@ public sealed class StockService : IStockService
             if (productId.HasValue
                 && await GetProductAsync(request.ProductId!.Value, cancellationToken) is null)
             {
-                return ProductNotFound();
+                return ProductErrors.NotFound();
             }
 
             if (!TryParseReferenceType(request.ReferenceType, out var referenceType))
@@ -333,14 +334,14 @@ public sealed class StockService : IStockService
                     || reservation.Operation != operation
                     || reservation.ResourceId != resourceId))
             {
-                return IdempotencyConflict();
+                return IdempotencyErrors.Conflict();
             }
 
             return reservation;
         }
         catch (DomainException exception)
         {
-            return Error.Validation("idempotency.invalid_key", exception.Message);
+            return IdempotencyErrors.InvalidKey(exception.Message);
         }
     }
 
@@ -354,30 +355,6 @@ public sealed class StockService : IStockService
             cancellationToken);
 
         return stock is null ? product.ToEmptyStockDto() : stock.ToDto();
-    }
-
-    private static Error ProductNotFound()
-    {
-        return Error.NotFound("product.not_found", "Producto no encontrado.");
-    }
-
-    private static Error StockNotFound()
-    {
-        return Error.NotFound("stock.not_found", "Stock no encontrado.");
-    }
-
-    private static Error StockChangeConflict()
-    {
-        return Error.Conflict(
-            "stock.change_conflict",
-            "El stock fue modificado por otra operacion. Actualiza los datos e intenta nuevamente.");
-    }
-
-    private static Error IdempotencyConflict()
-    {
-        return Error.Conflict(
-            "idempotency.key_conflict",
-            "Idempotency-Key ya fue utilizada para otra operacion o recurso.");
     }
 
     private static bool TryParseReferenceType(

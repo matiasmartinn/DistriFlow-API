@@ -22,7 +22,9 @@ public static class DependencyInjection
             IDistributorConfigurationService,
             DistributorConfigurationService>();
         services.AddScoped<IAuthService, AuthService>();
-        services.AddScoped<IOrderCommandService, OrderCommandService>();
+        services.AddScoped<IOrderDraftService, OrderDraftService>();
+        services.AddScoped<IOrderLifecycleService, OrderLifecycleService>();
+        services.AddScoped<OrderIdempotency>();
         services.AddScoped<IOrderQueryService, OrderQueryService>();
         services.AddScoped<IPriceListService, PriceListService>();
         services.AddScoped<IProductService, ProductService>();

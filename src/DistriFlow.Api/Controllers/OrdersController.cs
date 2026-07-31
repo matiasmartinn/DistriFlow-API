@@ -10,14 +10,17 @@ namespace DistriFlow.Api.Controllers;
 [Authorize(Policy = AuthorizationPolicies.ActiveDistributor)]
 public sealed class OrdersController : BaseController
 {
-    private readonly IOrderCommandService _commandService;
+    private readonly IOrderDraftService _draftService;
+    private readonly IOrderLifecycleService _lifecycleService;
     private readonly IOrderQueryService _queryService;
 
     public OrdersController(
-        IOrderCommandService commandService,
+        IOrderDraftService draftService,
+        IOrderLifecycleService lifecycleService,
         IOrderQueryService queryService)
     {
-        _commandService = commandService;
+        _draftService = draftService;
+        _lifecycleService = lifecycleService;
         _queryService = queryService;
     }
 
@@ -29,7 +32,7 @@ public sealed class OrdersController : BaseController
         CancellationToken cancellationToken)
     {
         return HandleResult(
-            await _commandService.StartAsync(
+            await _draftService.StartAsync(
                 request,
                 idempotencyKey,
                 cancellationToken),
@@ -62,7 +65,7 @@ public sealed class OrdersController : BaseController
         CancellationToken cancellationToken)
     {
         return HandleResult(
-            await _commandService.AddLineAsync(id, request, cancellationToken));
+            await _draftService.AddLineAsync(id, request, cancellationToken));
     }
 
     [HttpPut("{id:guid}/lines/{productId:guid}")]
@@ -74,7 +77,7 @@ public sealed class OrdersController : BaseController
         CancellationToken cancellationToken)
     {
         return HandleResult(
-            await _commandService.ChangeLineQuantityAsync(
+            await _draftService.ChangeLineQuantityAsync(
                 id,
                 productId,
                 request,
@@ -90,7 +93,7 @@ public sealed class OrdersController : BaseController
         CancellationToken cancellationToken)
     {
         return HandleResult(
-            await _commandService.RemoveLineAsync(
+            await _draftService.RemoveLineAsync(
                 id,
                 productId,
                 rowVersion,
@@ -106,7 +109,7 @@ public sealed class OrdersController : BaseController
         CancellationToken cancellationToken)
     {
         return HandleResult(
-            await _commandService.ConfirmAsync(
+            await _lifecycleService.ConfirmAsync(
                 id,
                 request,
                 idempotencyKey,
@@ -122,7 +125,7 @@ public sealed class OrdersController : BaseController
         CancellationToken cancellationToken)
     {
         return HandleResult(
-            await _commandService.CancelAsync(
+            await _lifecycleService.CancelAsync(
                 id,
                 request,
                 idempotencyKey,

@@ -4,7 +4,7 @@ using DistriFlow.Application.Orders.DTOs.Responses;
 
 namespace DistriFlow.Application.Orders.Commands;
 
-public interface IOrderCommandService
+public interface IOrderDraftService
 {
     Task<Result<OrderDto>> StartAsync(
         StartOrderRequest request,
@@ -26,17 +26,5 @@ public interface IOrderCommandService
         Guid orderId,
         Guid productId,
         long rowVersion,
-        CancellationToken cancellationToken = default);
-
-    Task<Result<OrderDto>> ConfirmAsync(
-        Guid orderId,
-        ConfirmOrderRequest request,
-        string? idempotencyKey,
-        CancellationToken cancellationToken = default);
-
-    Task<Result<OrderDto>> CancelAsync(
-        Guid orderId,
-        CancelOrderRequest request,
-        string? idempotencyKey,
         CancellationToken cancellationToken = default);
 }

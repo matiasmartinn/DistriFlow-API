@@ -3,17 +3,22 @@ using DistriFlow.Application.Common.Security;
 using DistriFlow.Application.Customers.DTOs.Requests;
 using DistriFlow.Application.Customers.DTOs.Responses;
 using DistriFlow.Application.Customers.Mappers;
+using DistriFlow.Application.DistributorConfigurations;
+using DistriFlow.Application.PriceLists;
+using DistriFlow.Application.Products;
 using DistriFlow.Domain.Common;
 using DistriFlow.Domain.Common.Errors;
 using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.Customers;
 using DistriFlow.Domain.DistributorConfigurations;
-using DistriFlow.Domain.DistributorConfigurations.Enums;
+using DistriFlow.Domain.Orders;
+using DistriFlow.Domain.Orders.Services;
 using DistriFlow.Domain.PriceLists;
 using DistriFlow.Domain.Products;
 using DistriFlow.Domain.Users;
 using DistriFlow.Domain.Customers.Enums;
 using DistriFlow.Domain.Customers.ValueObjects;
+using DistriFlow.Domain.Orders.Enums;
 using DistriFlow.Domain.PriceLists.ValueObjects;
 using DistriFlow.Domain.Products.Enums;
 using DistriFlow.Domain.Products.ValueObjects;
@@ -84,14 +89,10 @@ public sealed class CustomerService : ICustomerService
         CancellationToken cancellationToken = default)
     {
         if (!TryParseStatus(request.Status, out var status))
-            return Error.Validation(
-                "customer.invalid_status",
-                "El estado del cliente es invalido.");
+            return CustomerErrors.InvalidStatus();
 
         if (!TryParseTaxCondition(request.TaxCondition, out var taxCondition))
-            return Error.Validation(
-                "customer.invalid_tax_condition",
-                "La condicion fiscal del cliente es invalida.");
+            return CustomerErrors.InvalidTaxCondition();
 
         if (_currentUserContext.Role != Role.Administrator || !request.IncludeInactive)
             status = CustomerStatus.Active;
@@ -113,7 +114,7 @@ public sealed class CustomerService : ICustomerService
         try
         {
             var customer = await GetCustomerAsync(id, cancellationToken);
-            return customer is null ? CustomerNotFound() : customer.ToDto();
+            return customer is null ? CustomerErrors.NotFound() : customer.ToDto();
         }
         catch (DomainException exception)
         {
@@ -164,7 +165,7 @@ public sealed class CustomerService : ICustomerService
             var customer = await GetCustomerAsync(id, cancellationToken);
 
             if (customer is null)
-                return CustomerNotFound();
+                return CustomerErrors.NotFound();
 
             customer.AssignPriceList(priceListId.Data!.Value);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -221,10 +222,10 @@ public sealed class CustomerService : ICustomerService
             var customer = await GetCustomerAsync(id, cancellationToken);
 
             if (customer is null)
-                return CustomerNotFound();
+                return CustomerErrors.NotFound();
 
             if (customer.Status != CustomerStatus.Active)
-                return CustomerInactive();
+                return CustomerErrors.Inactive();
 
             var product = await _productRepository.GetByIdAsync(
                 _currentUserContext.DistributorId,
@@ -232,39 +233,36 @@ public sealed class CustomerService : ICustomerService
                 cancellationToken);
 
             if (product is null || product.Status != ProductStatus.Active)
-                return ProductNotFound();
+                return ProductErrors.NotFound();
 
-            if (!customer.PriceListId.HasValue)
-                return await ResolveFallbackPriceAsync(
-                    customer,
-                    product,
+            PriceList? priceList = null;
+            if (customer.PriceListId.HasValue)
+                priceList = await _priceListRepository.GetEffectiveBySeriesIdAsync(
+                    _currentUserContext.DistributorId,
+                    customer.PriceListId.Value,
+                    DateTime.UtcNow,
                     cancellationToken);
 
-            var priceList = await _priceListRepository.GetEffectiveBySeriesIdAsync(
+            var configuration = await _configurationRepository.GetByDistributorIdAsync(
                 _currentUserContext.DistributorId,
-                customer.PriceListId.Value,
-                DateTime.UtcNow,
                 cancellationToken);
 
-            if (priceList is null)
-                return await ResolveFallbackPriceAsync(
-                    customer,
-                    product,
-                    cancellationToken);
+            if (configuration is null)
+                return ConfigurationErrors.NotFound();
 
-            var price = priceList.FindPrice(product.Id);
+            var pricing = OrderLinePricing.Resolve(
+                priceList,
+                configuration.PriceFallbackPolicy,
+                product);
 
-            return price.HasValue
-                ? new EffectivePriceDto(
+            return pricing.Status == OrderLinePriceStatus.Unavailable
+                ? CustomerErrors.PriceNotAvailable()
+                : new EffectivePriceDto(
                     customer.Id.Value,
                     product.Id.Value,
-                    price.Value.Amount,
-                    "PriceList",
-                    priceList.Id.Value)
-                : await ResolveFallbackPriceAsync(
-                    customer,
-                    product,
-                    cancellationToken);
+                    pricing.AppliedUnitPrice.Amount,
+                    pricing.PriceOrigin.ToString(),
+                    pricing.PriceListId?.Value);
         }
         catch (DomainException exception)
         {
@@ -282,7 +280,7 @@ public sealed class CustomerService : ICustomerService
             var customer = await GetCustomerAsync(id, cancellationToken);
 
             if (customer is null)
-                return CustomerNotFound();
+                return CustomerErrors.NotFound();
 
             change(customer);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -329,7 +327,7 @@ public sealed class CustomerService : ICustomerService
         }
 
         return priceList is null || !priceList.IsEffectiveAt(effectiveAtUtc)
-            ? Result<PriceListId?>.Failure(PriceListNotFound())
+            ? Result<PriceListId?>.Failure(PriceListErrors.NotFound())
             : Result<PriceListId?>.Success(priceList.SeriesId);
     }
 
@@ -338,61 +336,6 @@ public sealed class CustomerService : ICustomerService
         return request is null
             ? null
             : Address.Create(request.Street, request.CityId, request.ZipCode);
-    }
-
-    private async Task<Result<EffectivePriceDto>> ResolveFallbackPriceAsync(
-        Customer customer,
-        Product product,
-        CancellationToken cancellationToken)
-    {
-        var configuration = await _configurationRepository.GetByDistributorIdAsync(
-            _currentUserContext.DistributorId,
-            cancellationToken);
-
-        if (configuration is null)
-        {
-            return Error.NotFound(
-                "distributor_configuration.not_found",
-                "Configuración de distribuidora no encontrada.");
-        }
-
-        if (configuration.PriceFallbackPolicy == PriceFallbackPolicy.RejectOrder)
-        {
-            return Error.Domain(
-                "customer.price_not_available",
-                "No existe un precio válido para el producto.");
-        }
-
-        return new EffectivePriceDto(
-            customer.Id.Value,
-            product.Id.Value,
-            product.BasePrice.Amount,
-            "LastValidPrice",
-            null);
-    }
-
-    private static Error CustomerNotFound()
-    {
-        return Error.NotFound("customer.not_found", "Cliente no encontrado.");
-    }
-
-    private static Error CustomerInactive()
-    {
-        return Error.Domain(
-            "customer.inactive",
-            "El cliente se encuentra inactivo.");
-    }
-
-    private static Error PriceListNotFound()
-    {
-        return Error.NotFound(
-            "price_list.not_found",
-            "Lista de precios no encontrada.");
-    }
-
-    private static Error ProductNotFound()
-    {
-        return Error.NotFound("product.not_found", "Producto no encontrado.");
     }
 
     private static TaxCondition ParseTaxCondition(string value)
