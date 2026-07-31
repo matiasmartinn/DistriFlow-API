@@ -3,6 +3,8 @@ using DistriFlow.Domain.Distributors;
 using DistriFlow.Domain.Products;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using DistriFlow.Domain.Distributors.ValueObjects;
+using DistriFlow.Domain.Products.ValueObjects;
 
 namespace DistriFlow.Infrastructure.Persistence.Configurations;
 

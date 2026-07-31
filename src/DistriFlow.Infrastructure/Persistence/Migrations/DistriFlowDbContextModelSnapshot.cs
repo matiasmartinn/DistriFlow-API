@@ -745,7 +745,7 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("DistriFlow.Domain.Orders.Order", b =>
                 {
-                    b.OwnsMany("DistriFlow.Domain.Orders.OrderLine", "OrderLines", b1 =>
+                    b.OwnsMany("DistriFlow.Domain.Orders.Entities.OrderLine", "OrderLines", b1 =>
                         {
                             b1.Property<Guid>("OrderId")
                                 .HasColumnType("uuid")
@@ -833,7 +833,7 @@ namespace DistriFlow.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("DistriFlow.Domain.PriceLists.PriceList", b =>
                 {
-                    b.OwnsMany("DistriFlow.Domain.PriceLists.ProductPrice", "ProductPrices", b1 =>
+                    b.OwnsMany("DistriFlow.Domain.PriceLists.Entities.ProductPrice", "ProductPrices", b1 =>
                         {
                             b1.Property<Guid>("PriceListId")
                                 .HasColumnType("uuid")

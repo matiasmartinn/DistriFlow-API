@@ -1,5 +1,8 @@
 using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.Distributors;
+using DistriFlow.Domain.Distributors.ValueObjects;
+using DistriFlow.Domain.Users.Enums;
+using DistriFlow.Domain.Users.ValueObjects;
 
 namespace DistriFlow.Domain.Users;
 

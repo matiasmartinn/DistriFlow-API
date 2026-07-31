@@ -1,4 +1,6 @@
 using DistriFlow.Domain.Distributors;
+using DistriFlow.Domain.Distributors.ValueObjects;
+using DistriFlow.Domain.PriceLists.ValueObjects;
 
 namespace DistriFlow.Domain.PriceLists;
 

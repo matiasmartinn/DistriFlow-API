@@ -8,6 +8,10 @@ using DistriFlow.Domain.Common.Errors;
 using DistriFlow.Domain.Customers;
 using DistriFlow.Domain.Orders;
 using DistriFlow.Domain.Users;
+using DistriFlow.Domain.Customers.ValueObjects;
+using DistriFlow.Domain.Orders.Enums;
+using DistriFlow.Domain.Orders.ValueObjects;
+using DistriFlow.Domain.Users.ValueObjects;
 
 namespace DistriFlow.Application.Orders.Queries;
 

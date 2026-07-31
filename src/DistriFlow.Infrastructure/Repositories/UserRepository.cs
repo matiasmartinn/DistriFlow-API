@@ -5,6 +5,9 @@ using DistriFlow.Domain.Users;
 using DistriFlow.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using DistriFlow.Domain.Distributors.ValueObjects;
+using DistriFlow.Domain.Users.Enums;
+using DistriFlow.Domain.Users.ValueObjects;
 
 namespace DistriFlow.Infrastructure.Repositories;
 

@@ -2,6 +2,8 @@ using System.Security.Claims;
 using DistriFlow.Application.Common.Security;
 using DistriFlow.Domain.Distributors;
 using DistriFlow.Domain.Users;
+using DistriFlow.Domain.Distributors.ValueObjects;
+using DistriFlow.Domain.Users.ValueObjects;
 
 namespace DistriFlow.Api.Security;
 

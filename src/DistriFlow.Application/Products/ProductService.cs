@@ -10,6 +10,9 @@ using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.Products;
 using DistriFlow.Domain.Stocks;
 using DistriFlow.Domain.Users;
+using DistriFlow.Domain.Products.Enums;
+using DistriFlow.Domain.Products.ValueObjects;
+using DistriFlow.Domain.Users.ValueObjects;
 
 namespace DistriFlow.Application.Products;
 

@@ -5,6 +5,10 @@ using DistriFlow.Domain.PriceLists;
 using DistriFlow.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using DistriFlow.Domain.Customers.ValueObjects;
+using DistriFlow.Domain.Distributors.ValueObjects;
+using DistriFlow.Domain.PriceLists.ValueObjects;
+using DistriFlow.Domain.Users.ValueObjects;
 
 namespace DistriFlow.Infrastructure.Persistence.Configurations;
 

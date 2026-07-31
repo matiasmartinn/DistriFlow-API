@@ -1,6 +1,9 @@
 using DistriFlow.Domain.Common.Errors;
 using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.Distributors;
+using DistriFlow.Domain.Distributors.ValueObjects;
+using DistriFlow.Domain.Products.Enums;
+using DistriFlow.Domain.Products.ValueObjects;
 
 namespace DistriFlow.Domain.Products;
 

@@ -7,6 +7,13 @@ using DistriFlow.Domain.Products;
 using DistriFlow.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using DistriFlow.Domain.Customers.ValueObjects;
+using DistriFlow.Domain.Distributors.ValueObjects;
+using DistriFlow.Domain.Orders.Entities;
+using DistriFlow.Domain.Orders.ValueObjects;
+using DistriFlow.Domain.PriceLists.ValueObjects;
+using DistriFlow.Domain.Products.ValueObjects;
+using DistriFlow.Domain.Users.ValueObjects;
 
 namespace DistriFlow.Infrastructure.Persistence.Configurations;
 

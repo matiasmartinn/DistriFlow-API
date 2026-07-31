@@ -3,6 +3,11 @@ using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.Distributors;
 using DistriFlow.Domain.Products;
 using DistriFlow.Domain.Users;
+using DistriFlow.Domain.Distributors.ValueObjects;
+using DistriFlow.Domain.Products.ValueObjects;
+using DistriFlow.Domain.StockMovements.Enums;
+using DistriFlow.Domain.StockMovements.ValueObjects;
+using DistriFlow.Domain.Users.ValueObjects;
 
 namespace DistriFlow.Domain.StockMovements;
 

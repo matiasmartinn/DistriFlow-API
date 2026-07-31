@@ -4,6 +4,9 @@ using DistriFlow.Domain.Products;
 using DistriFlow.Domain.Stocks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using DistriFlow.Domain.Distributors.ValueObjects;
+using DistriFlow.Domain.Products.ValueObjects;
+using DistriFlow.Domain.Stocks.ValueObjects;
 
 namespace DistriFlow.Infrastructure.Persistence.Configurations;
 

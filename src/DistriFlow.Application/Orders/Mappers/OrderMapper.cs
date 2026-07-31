@@ -1,5 +1,10 @@
 using DistriFlow.Application.Orders.DTOs.Responses;
 using DistriFlow.Domain.Orders;
+using DistriFlow.Domain.Customers.ValueObjects;
+using DistriFlow.Domain.Orders.Entities;
+using DistriFlow.Domain.Orders.Enums;
+using DistriFlow.Domain.PriceLists.ValueObjects;
+using DistriFlow.Domain.Products.ValueObjects;
 
 namespace DistriFlow.Application.Orders.Mappers;
 

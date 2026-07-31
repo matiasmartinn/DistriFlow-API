@@ -1,5 +1,6 @@
 using DistriFlow.Application.PriceLists.DTOs.Responses;
 using DistriFlow.Domain.PriceLists;
+using DistriFlow.Domain.Products.ValueObjects;
 
 namespace DistriFlow.Application.PriceLists.Mappers;
 

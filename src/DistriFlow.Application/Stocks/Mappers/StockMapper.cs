@@ -2,6 +2,8 @@ using DistriFlow.Application.Stocks.DTOs.Responses;
 using DistriFlow.Domain.Products;
 using DistriFlow.Domain.StockMovements;
 using DistriFlow.Domain.Stocks;
+using DistriFlow.Domain.Products.ValueObjects;
+using DistriFlow.Domain.Stocks.ValueObjects;
 
 namespace DistriFlow.Application.Stocks.Mappers;
 

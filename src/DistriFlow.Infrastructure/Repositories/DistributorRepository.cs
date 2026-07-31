@@ -1,6 +1,7 @@
 using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.Distributors;
 using DistriFlow.Infrastructure.Persistence;
+using DistriFlow.Domain.Distributors.ValueObjects;
 
 namespace DistriFlow.Infrastructure.Repositories;
 

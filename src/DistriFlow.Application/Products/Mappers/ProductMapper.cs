@@ -1,6 +1,7 @@
 using DistriFlow.Application.Products.DTOs.Responses;
 using DistriFlow.Domain.Products;
 using DistriFlow.Domain.Stocks;
+using DistriFlow.Domain.Products.ValueObjects;
 
 namespace DistriFlow.Application.Products.Mappers;
 

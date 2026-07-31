@@ -1,4 +1,7 @@
 using DistriFlow.Domain.Distributors;
+using DistriFlow.Domain.Customers.Enums;
+using DistriFlow.Domain.Customers.ValueObjects;
+using DistriFlow.Domain.Distributors.ValueObjects;
 
 namespace DistriFlow.Domain.Customers;
 

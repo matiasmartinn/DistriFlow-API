@@ -3,6 +3,10 @@ using DistriFlow.Domain.Products;
 using DistriFlow.Domain.StockMovements;
 using DistriFlow.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using DistriFlow.Domain.Distributors.ValueObjects;
+using DistriFlow.Domain.Products.ValueObjects;
+using DistriFlow.Domain.StockMovements.Enums;
+using DistriFlow.Domain.StockMovements.ValueObjects;
 
 namespace DistriFlow.Infrastructure.Repositories;
 

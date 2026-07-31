@@ -5,6 +5,7 @@ using DistriFlow.Application.DistributorConfigurations.DTOs.Responses;
 using DistriFlow.Application.DistributorConfigurations.Mappers;
 using DistriFlow.Domain.Common.Errors;
 using DistriFlow.Domain.DistributorConfigurations;
+using DistriFlow.Domain.DistributorConfigurations.Enums;
 
 namespace DistriFlow.Application.DistributorConfigurations;
 

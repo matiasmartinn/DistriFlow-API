@@ -2,6 +2,9 @@ using DistriFlow.Domain.Distributors;
 using DistriFlow.Domain.Products;
 using DistriFlow.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using DistriFlow.Domain.Distributors.ValueObjects;
+using DistriFlow.Domain.Products.Enums;
+using DistriFlow.Domain.Products.ValueObjects;
 
 namespace DistriFlow.Infrastructure.Repositories;
 

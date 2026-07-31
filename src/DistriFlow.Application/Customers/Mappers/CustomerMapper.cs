@@ -1,5 +1,7 @@
 using DistriFlow.Application.Customers.DTOs.Responses;
 using DistriFlow.Domain.Customers;
+using DistriFlow.Domain.Customers.Enums;
+using DistriFlow.Domain.PriceLists.ValueObjects;
 
 namespace DistriFlow.Application.Customers.Mappers;
 

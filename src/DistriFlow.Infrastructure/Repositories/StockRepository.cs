@@ -6,6 +6,9 @@ using DistriFlow.Domain.Stocks;
 using DistriFlow.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using DistriFlow.Domain.Distributors.ValueObjects;
+using DistriFlow.Domain.Products.ValueObjects;
+using DistriFlow.Domain.Stocks.ValueObjects;
 
 namespace DistriFlow.Infrastructure.Repositories;
 

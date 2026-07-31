@@ -8,9 +8,16 @@ using DistriFlow.Domain.Common.Errors;
 using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.Customers;
 using DistriFlow.Domain.DistributorConfigurations;
+using DistriFlow.Domain.DistributorConfigurations.Enums;
 using DistriFlow.Domain.PriceLists;
 using DistriFlow.Domain.Products;
 using DistriFlow.Domain.Users;
+using DistriFlow.Domain.Customers.Enums;
+using DistriFlow.Domain.Customers.ValueObjects;
+using DistriFlow.Domain.PriceLists.ValueObjects;
+using DistriFlow.Domain.Products.Enums;
+using DistriFlow.Domain.Products.ValueObjects;
+using DistriFlow.Domain.Users.ValueObjects;
 
 namespace DistriFlow.Application.Customers;
 

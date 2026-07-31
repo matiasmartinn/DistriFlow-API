@@ -6,6 +6,10 @@ using DistriFlow.Domain.Common.Errors;
 using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.Distributors;
 using DistriFlow.Domain.Users;
+using DistriFlow.Domain.Distributors.Enums;
+using DistriFlow.Domain.Distributors.ValueObjects;
+using DistriFlow.Domain.Users.Enums;
+using DistriFlow.Domain.Users.ValueObjects;
 
 namespace DistriFlow.Application.Auth;
 

@@ -9,6 +9,7 @@ using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.DistributorConfigurations;
 using DistriFlow.Domain.Distributors;
 using DistriFlow.Domain.Users;
+using DistriFlow.Domain.Users.ValueObjects;
 
 namespace DistriFlow.Application.Distributors;
 

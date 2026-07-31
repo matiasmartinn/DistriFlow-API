@@ -8,6 +8,8 @@ using DistriFlow.Domain.Common;
 using DistriFlow.Domain.Common.Errors;
 using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.Users;
+using DistriFlow.Domain.Users.Enums;
+using DistriFlow.Domain.Users.ValueObjects;
 
 namespace DistriFlow.Application.Users;
 

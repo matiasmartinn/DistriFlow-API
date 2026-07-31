@@ -12,6 +12,12 @@ using DistriFlow.Domain.Idempotency;
 using DistriFlow.Domain.StockMovements;
 using DistriFlow.Domain.Stocks;
 using DistriFlow.Domain.Users;
+using DistriFlow.Domain.Idempotency.Enums;
+using DistriFlow.Domain.Idempotency.ValueObjects;
+using DistriFlow.Domain.Products.Enums;
+using DistriFlow.Domain.Products.ValueObjects;
+using DistriFlow.Domain.StockMovements.Enums;
+using DistriFlow.Domain.Users.ValueObjects;
 
 namespace DistriFlow.Application.Stocks;
 

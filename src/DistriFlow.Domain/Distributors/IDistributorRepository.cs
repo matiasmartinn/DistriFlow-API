@@ -1,4 +1,5 @@
 using DistriFlow.Domain.Common.ValueObjects;
+using DistriFlow.Domain.Distributors.ValueObjects;
 
 namespace DistriFlow.Domain.Distributors;
 

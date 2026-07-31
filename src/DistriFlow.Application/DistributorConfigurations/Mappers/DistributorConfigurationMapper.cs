@@ -1,5 +1,7 @@
 using DistriFlow.Application.DistributorConfigurations.DTOs.Responses;
 using DistriFlow.Domain.DistributorConfigurations;
+using DistriFlow.Domain.DistributorConfigurations.Enums;
+using DistriFlow.Domain.Distributors.ValueObjects;
 
 namespace DistriFlow.Application.DistributorConfigurations.Mappers;
 

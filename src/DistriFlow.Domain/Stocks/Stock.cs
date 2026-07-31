@@ -2,6 +2,9 @@ using DistriFlow.Domain.Common.Errors;
 using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.Distributors;
 using DistriFlow.Domain.Products;
+using DistriFlow.Domain.Distributors.ValueObjects;
+using DistriFlow.Domain.Products.ValueObjects;
+using DistriFlow.Domain.Stocks.ValueObjects;
 
 namespace DistriFlow.Domain.Stocks;
 

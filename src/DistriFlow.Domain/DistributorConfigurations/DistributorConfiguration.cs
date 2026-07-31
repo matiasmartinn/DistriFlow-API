@@ -1,5 +1,7 @@
 using DistriFlow.Domain.Common.Errors;
 using DistriFlow.Domain.Distributors;
+using DistriFlow.Domain.DistributorConfigurations.Enums;
+using DistriFlow.Domain.Distributors.ValueObjects;
 
 namespace DistriFlow.Domain.DistributorConfigurations;
 

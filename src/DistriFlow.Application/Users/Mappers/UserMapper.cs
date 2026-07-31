@@ -1,5 +1,6 @@
 using DistriFlow.Application.Users.DTOs.Responses;
 using DistriFlow.Domain.Users;
+using DistriFlow.Domain.Users.ValueObjects;
 
 namespace DistriFlow.Application.Users.Mappers;
 

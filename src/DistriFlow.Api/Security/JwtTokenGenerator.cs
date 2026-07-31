@@ -5,6 +5,8 @@ using DistriFlow.Application.Common.Security;
 using DistriFlow.Domain.Users;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using DistriFlow.Domain.Distributors.ValueObjects;
+using DistriFlow.Domain.Users.ValueObjects;
 
 namespace DistriFlow.Api.Security;
 

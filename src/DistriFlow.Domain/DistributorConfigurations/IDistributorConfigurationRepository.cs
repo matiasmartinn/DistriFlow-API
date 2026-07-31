@@ -1,4 +1,6 @@
 using DistriFlow.Domain.Distributors;
+using DistriFlow.Domain.DistributorConfigurations.ValueObjects;
+using DistriFlow.Domain.Distributors.ValueObjects;
 
 namespace DistriFlow.Domain.DistributorConfigurations;
 

@@ -3,6 +3,11 @@ using DistriFlow.Domain.Common.ValueObjects;
 using DistriFlow.Domain.Distributors;
 using DistriFlow.Domain.PriceLists;
 using DistriFlow.Domain.Users;
+using DistriFlow.Domain.Customers.Enums;
+using DistriFlow.Domain.Customers.ValueObjects;
+using DistriFlow.Domain.Distributors.ValueObjects;
+using DistriFlow.Domain.PriceLists.ValueObjects;
+using DistriFlow.Domain.Users.ValueObjects;
 
 namespace DistriFlow.Domain.Customers;
 
