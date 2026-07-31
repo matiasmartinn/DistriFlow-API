@@ -111,7 +111,7 @@ if (app.Environment.IsDevelopment())
 if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 app.UseExceptionHandler();
-app.UseCors(FrontendPolicy);        // ← nombre explícito
+app.UseCors(FrontendPolicy);
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

@@ -72,12 +72,12 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.HasIndex(customer => customer.DistributorId);
         builder.HasIndex(customer => new { customer.DistributorId, customer.PriceListId });
         builder.HasIndex(customer => new
-            {
-                customer.DistributorId,
-                customer.Status,
-                customer.TaxCondition,
-                customer.Zone
-            })
+        {
+            customer.DistributorId,
+            customer.Status,
+            customer.TaxCondition,
+            customer.Zone
+        })
             .HasDatabaseName("ix_customers_distributor_status_tax_zone");
 
         builder.OwnsOne(customer => customer.Contact, contact =>

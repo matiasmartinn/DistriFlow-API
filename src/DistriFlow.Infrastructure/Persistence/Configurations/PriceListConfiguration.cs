@@ -81,22 +81,22 @@ public sealed class PriceListConfiguration : IEntityTypeConfiguration<PriceList>
 
         builder.HasIndex(priceList => priceList.DistributorId);
         builder.HasIndex(priceList => new
-            {
-                priceList.DistributorId,
-                priceList.SeriesId,
-                priceList.Version
-            })
+        {
+            priceList.DistributorId,
+            priceList.SeriesId,
+            priceList.Version
+        })
             .IsUnique()
             .HasDatabaseName(
                 "ix_price_lists_distributor_id_series_id_version");
         builder.HasIndex(priceList => new
-            {
-                priceList.DistributorId,
-                priceList.SeriesId,
-                priceList.Status,
-                priceList.ValidFromUtc,
-                priceList.ValidUntilUtc
-            })
+        {
+            priceList.DistributorId,
+            priceList.SeriesId,
+            priceList.Status,
+            priceList.ValidFromUtc,
+            priceList.ValidUntilUtc
+        })
             .HasDatabaseName("ix_price_lists_effective_version");
 
         builder.OwnsMany(priceList => priceList.ProductPrices, productPrices =>
