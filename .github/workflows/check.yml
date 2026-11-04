@@ -1,0 +1,62 @@
+name: API checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: distriflow_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local-ci-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DistriFlowDb: Host=localhost;Port=5432;Database=distriflow_ci;Username=postgres;Password=local-ci-only
+      Jwt__Secret: distriflow-ci-only-signing-key-for-ephemeral-integration-tests-2026
+      Cors__AllowedOrigins__0: http://localhost:5173
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - run: dotnet restore DistriFlow-API.sln -p:NuGetAudit=true -p:NuGetAuditMode=all -p:WarningsAsErrors=NU1900%3BNU1901%3BNU1902%3BNU1903%3BNU1904
+      - run: dotnet build DistriFlow-API.sln --configuration Release --no-restore
+      - run: dotnet run --project verification/DistriFlow.Domain.Checks --configuration Release
+      - run: dotnet tool install --global dotnet-ef --version 9.0.10
+      - run: dotnet ef database update --project src/DistriFlow.Infrastructure --startup-project src/DistriFlow.Api --configuration Release --no-build
+      - name: Start API and verify integration
+        shell: bash
+        run: |
+          dotnet run --no-build --configuration Release --no-launch-profile --project src/DistriFlow.Api --urls http://localhost:5116 > api-ci.log 2>&1 &
+          api_pid=$!
+          trap 'kill "$api_pid" 2>/dev/null || true' EXIT
+          ready=false
+          for attempt in {1..30}; do
+            if curl --fail --silent http://localhost:5116/openapi/v1.json > /dev/null; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" != true ]; then cat api-ci.log; exit 1; fi
+          node scripts/verify-stage-three.mjs
+          dotnet run --project verification/DistriFlow.Operational.Checks --configuration Release
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: api-integration-results
+          path: docs/validation/stage-three-api.json
