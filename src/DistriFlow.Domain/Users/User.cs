@@ -54,20 +54,23 @@ public sealed class User
         if (distributorId.Value == Guid.Empty)
             throw new DomainException("La distribuidora del usuario es requerida.");
 
-        if (string.IsNullOrWhiteSpace(name))
-            throw new DomainException("El nombre del usuario es requerido.");
-
         if (createdByUserId.HasValue && createdByUserId.Value.Value == Guid.Empty)
             throw new DomainException("El usuario creador es invalido.");
 
         return new User(
             UserId.New(),
             distributorId,
-            name.Trim(),
+            NormalizeName(name),
             email,
             passwordHash,
             role,
             createdByUserId);
+    }
+
+    public void Rename(string name)
+    {
+        EnsureActive();
+        Name = NormalizeName(name);
     }
 
     public void ChangeRole(Role role)
@@ -114,6 +117,18 @@ public sealed class User
             throw new DomainException("La fecha de acceso debe estar expresada en UTC.");
 
         LastLoginAtUtc = occurredAtUtc;
+    }
+
+    private static string NormalizeName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new DomainException("El nombre del usuario es requerido.");
+
+        var normalized = name.Trim();
+        if (normalized.Length > 200)
+            throw new DomainException("El nombre del usuario no puede superar 200 caracteres.");
+
+        return normalized;
     }
 
     private void EnsureActive()

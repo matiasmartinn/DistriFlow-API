@@ -25,6 +25,15 @@ public sealed class AuthController : BaseController
             await _authService.LoginAsync(request, cancellationToken));
     }
 
+    [HttpPut("me/name")]
+    [Authorize(Policy = AuthorizationPolicies.ActiveUser)]
+    public async Task<IActionResult> UpdateCurrentName(
+        [FromBody] UpdateCurrentUserNameRequest request,
+        CancellationToken cancellationToken)
+    {
+        return HandleResult(await _authService.UpdateCurrentNameAsync(request, cancellationToken));
+    }
+
     [HttpGet("me")]
     [Authorize(Policy = AuthorizationPolicies.ActiveUser)]
     public async Task<IActionResult> GetCurrent(

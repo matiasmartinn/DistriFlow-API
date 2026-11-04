@@ -125,6 +125,30 @@ public sealed class AuthService : IAuthService
             user.Name);
     }
 
+    public async Task<Result<CurrentUserDto>> UpdateCurrentNameAsync(
+        UpdateCurrentUserNameRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var user = await _userRepository.GetByIdAsync(
+                _currentUserContext.DistributorId,
+                _currentUserContext.UserId,
+                cancellationToken);
+
+            if (user is null)
+                return Error.NotFound("auth.current_user_not_found", "No se encontró la sesión actual.");
+
+            user.Rename(request.Name);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            return await GetCurrentAsync(cancellationToken);
+        }
+        catch (DomainException exception)
+        {
+            return Error.Domain("user.invalid_name", exception.Message);
+        }
+    }
+
     public async Task<Result> ValidateCurrentSessionAsync(
         bool requireActiveDistributor,
         CancellationToken cancellationToken = default)
