@@ -1,3 +1,4 @@
+using DistriFlow.Application.Common.Notifications;
 using DistriFlow.Application.Common.Results;
 using DistriFlow.Application.Common.Security;
 using DistriFlow.Application.Customers;
@@ -39,6 +40,7 @@ public sealed class OrderLifecycleService : IOrderLifecycleService
     private readonly IDistributorConfigurationRepository _configurationRepository;
     private readonly IStockRepository _stockRepository;
     private readonly IStockMovementRepository _stockMovementRepository;
+    private readonly IOperationalNotifier _notifier;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserContext _currentUserContext;
     private readonly OrderIdempotency _orderIdempotency;
@@ -51,6 +53,7 @@ public sealed class OrderLifecycleService : IOrderLifecycleService
         IDistributorConfigurationRepository configurationRepository,
         IStockRepository stockRepository,
         IStockMovementRepository stockMovementRepository,
+        IOperationalNotifier notifier,
         IUnitOfWork unitOfWork,
         ICurrentUserContext currentUserContext,
         OrderIdempotency orderIdempotency)
@@ -62,6 +65,7 @@ public sealed class OrderLifecycleService : IOrderLifecycleService
         _configurationRepository = configurationRepository;
         _stockRepository = stockRepository;
         _stockMovementRepository = stockMovementRepository;
+        _notifier = notifier;
         _unitOfWork = unitOfWork;
         _currentUserContext = currentUserContext;
         _orderIdempotency = orderIdempotency;
@@ -119,6 +123,7 @@ public sealed class OrderLifecycleService : IOrderLifecycleService
                 return productAvailabilityError;
             }
 
+            var previousStatusForNotification = order.Status;
             var confirmedAtUtc = DateTime.UtcNow;
             order.Confirm(
                 _currentUserContext.UserId,
@@ -173,6 +178,11 @@ public sealed class OrderLifecycleService : IOrderLifecycleService
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+            await _notifier.OrderChangedAsync(_currentUserContext.DistributorId.Value, order.SalesRepId.Value,
+                new OrderChangedNotification(order.Id.Value, order.RowVersion, order.Status.ToString()));
+            if (order.Status == OrderStatus.Confirmed || previousStatusForNotification == OrderStatus.Confirmed)
+                await _notifier.StockChangedAsync(_currentUserContext.DistributorId.Value,
+                    new StockChangedNotification(order.OrderLines.Select(line => line.ProductId.Value).ToArray()));
             return order.ToDto();
         }
         catch (ConcurrencyException)
@@ -231,6 +241,7 @@ public sealed class OrderLifecycleService : IOrderLifecycleService
                 return OrderErrors.OrderNotFound();
             }
 
+            var previousStatusForNotification = order.Status;
             var previousStatus = order.Status;
             var cancelledAtUtc = DateTime.UtcNow;
             order.Cancel(
@@ -288,6 +299,11 @@ public sealed class OrderLifecycleService : IOrderLifecycleService
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+            await _notifier.OrderChangedAsync(_currentUserContext.DistributorId.Value, order.SalesRepId.Value,
+                new OrderChangedNotification(order.Id.Value, order.RowVersion, order.Status.ToString()));
+            if (order.Status == OrderStatus.Confirmed || previousStatusForNotification == OrderStatus.Confirmed)
+                await _notifier.StockChangedAsync(_currentUserContext.DistributorId.Value,
+                    new StockChangedNotification(order.OrderLines.Select(line => line.ProductId.Value).ToArray()));
             return order.ToDto();
         }
         catch (ConcurrencyException)

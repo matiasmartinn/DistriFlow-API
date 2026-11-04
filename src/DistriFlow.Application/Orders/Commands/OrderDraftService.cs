@@ -1,3 +1,4 @@
+using DistriFlow.Application.Common.Notifications;
 using DistriFlow.Application.Common.Results;
 using DistriFlow.Application.Common.Security;
 using DistriFlow.Application.Customers;
@@ -38,6 +39,7 @@ public sealed class OrderDraftService : IOrderDraftService
     private readonly IPriceListRepository _priceListRepository;
     private readonly IDistributorRepository _distributorRepository;
     private readonly IDistributorConfigurationRepository _configurationRepository;
+    private readonly IOperationalNotifier _notifier;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserContext _currentUserContext;
     private readonly OrderIdempotency _orderIdempotency;
@@ -49,6 +51,7 @@ public sealed class OrderDraftService : IOrderDraftService
         IPriceListRepository priceListRepository,
         IDistributorRepository distributorRepository,
         IDistributorConfigurationRepository configurationRepository,
+        IOperationalNotifier notifier,
         IUnitOfWork unitOfWork,
         ICurrentUserContext currentUserContext,
         OrderIdempotency orderIdempotency)
@@ -59,6 +62,7 @@ public sealed class OrderDraftService : IOrderDraftService
         _priceListRepository = priceListRepository;
         _distributorRepository = distributorRepository;
         _configurationRepository = configurationRepository;
+        _notifier = notifier;
         _unitOfWork = unitOfWork;
         _currentUserContext = currentUserContext;
         _orderIdempotency = orderIdempotency;
@@ -145,6 +149,8 @@ public sealed class OrderDraftService : IOrderDraftService
 
             await transaction.CommitAsync(cancellationToken);
 
+            await _notifier.OrderChangedAsync(_currentUserContext.DistributorId.Value, order.SalesRepId.Value,
+                new OrderChangedNotification(order.Id.Value, order.RowVersion, order.Status.ToString()));
             return order.ToDto();
         }
         catch (DomainException exception)
@@ -198,6 +204,8 @@ public sealed class OrderDraftService : IOrderDraftService
                 request.RowVersion);
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _notifier.OrderChangedAsync(_currentUserContext.DistributorId.Value, orderResult.Data.SalesRepId.Value,
+                new OrderChangedNotification(orderResult.Data.Id.Value, orderResult.Data.RowVersion, orderResult.Data.Status.ToString()));
             return orderResult.Data.ToDto();
         }
         catch (ConcurrencyException)
@@ -235,6 +243,8 @@ public sealed class OrderDraftService : IOrderDraftService
                 request.RowVersion);
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _notifier.OrderChangedAsync(_currentUserContext.DistributorId.Value, orderResult.Data.SalesRepId.Value,
+                new OrderChangedNotification(orderResult.Data.Id.Value, orderResult.Data.RowVersion, orderResult.Data.Status.ToString()));
             return orderResult.Data.ToDto();
         }
         catch (ConcurrencyException)
@@ -268,6 +278,8 @@ public sealed class OrderDraftService : IOrderDraftService
             orderResult.Data.RemoveLine(parsedProductId, rowVersion);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+            await _notifier.OrderChangedAsync(_currentUserContext.DistributorId.Value, orderResult.Data.SalesRepId.Value,
+                new OrderChangedNotification(orderResult.Data.Id.Value, orderResult.Data.RowVersion, orderResult.Data.Status.ToString()));
             return orderResult.Data.ToDto();
         }
         catch (ConcurrencyException)

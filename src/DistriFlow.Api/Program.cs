@@ -1,3 +1,5 @@
+using DistriFlow.Api.Realtime;
+using DistriFlow.Application.Common.Notifications;
 using System.Text;
 using DistriFlow.Api.Middleware;
 using DistriFlow.Api.Security;
@@ -29,6 +31,9 @@ builder.Services.AddCors(options =>
 
 // ── Servicios ─────────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<OperationalConnections>();
+builder.Services.AddScoped<IOperationalNotifier, SignalROperationalNotifier>();
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -50,6 +55,16 @@ builder.Services
     .AddJwtBearer(options =>
     {
         options.MapInboundClaims = false;
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (context.HttpContext.Request.Path.StartsWithSegments("/api/hubs/operations")
+                    && context.Request.Query.TryGetValue("access_token", out var token))
+                    context.Token = token;
+                return Task.CompletedTask;
+            }
+        };
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -115,6 +130,8 @@ app.UseCors(FrontendPolicy);
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<OperationsHub>("/api/hubs/operations", options =>
+    options.CloseOnAuthenticationExpiration = true);
 
 app.Run();
 

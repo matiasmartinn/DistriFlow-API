@@ -1,3 +1,4 @@
+using DistriFlow.Application.Common.Notifications;
 using DistriFlow.Application.Common.Pagination;
 using DistriFlow.Application.Common.Results;
 using DistriFlow.Application.Common.Security;
@@ -28,6 +29,7 @@ public sealed class StockService : IStockService
     private readonly IStockMovementRepository _stockMovementRepository;
     private readonly IProductRepository _productRepository;
     private readonly IIdempotencyRecordRepository _idempotencyRecordRepository;
+    private readonly IOperationalNotifier _notifier;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserContext _currentUserContext;
 
@@ -36,6 +38,7 @@ public sealed class StockService : IStockService
         IStockMovementRepository stockMovementRepository,
         IProductRepository productRepository,
         IIdempotencyRecordRepository idempotencyRecordRepository,
+        IOperationalNotifier notifier,
         IUnitOfWork unitOfWork,
         ICurrentUserContext currentUserContext)
     {
@@ -43,6 +46,7 @@ public sealed class StockService : IStockService
         _stockMovementRepository = stockMovementRepository;
         _productRepository = productRepository;
         _idempotencyRecordRepository = idempotencyRecordRepository;
+        _notifier = notifier;
         _unitOfWork = unitOfWork;
         _currentUserContext = currentUserContext;
     }
@@ -140,6 +144,8 @@ public sealed class StockService : IStockService
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
+            await _notifier.StockChangedAsync(_currentUserContext.DistributorId.Value,
+                new StockChangedNotification(new[] { product.Id.Value }));
             return change.ToDto(product.Id);
         }
         catch (ConcurrencyException)
@@ -230,6 +236,8 @@ public sealed class StockService : IStockService
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
+            await _notifier.StockChangedAsync(_currentUserContext.DistributorId.Value,
+                new StockChangedNotification(new[] { product.Id.Value }));
             return change.ToDto(product.Id);
         }
         catch (ConcurrencyException)
