@@ -1,0 +1,16 @@
+- Stock se descuenta al confirmar pedido.
+- La política predeterminada `RequireAvailableStock` no permite stock negativo.
+- `AllowNegativeStock` es una opción válida configurable por distribuidora.
+- Si falta el precio de lista, `UseLastValidPrice` usa el precio base actual y `RejectOrder` rechaza agregar la línea. No hay búsqueda histórica de precios de respaldo.
+- ListaDePrecios es reutilizable.
+- Stock es aggregate separado de Producto.
+- Cliente-comercio no es usuario del sistema en baseline.
+- No hay offline en esta etapa.
+- No hay facturación.
+- No hay cuenta corriente.
+- No hay WhatsApp automático.
+- No hay ERP.
+- No hay logística.
+- Cada producto tiene una única unidad de venta; las cantidades son decimales y no hay conversiones entre unidades en v1.
+- Address guarda Street, CityId y ZipCode opcional; Province se deriva de City.
+- Stock persiste saldo y ledger interno para integridad y reversión de cancelaciones. La pantalla de historial de movimientos está fuera del MVP vigente; el endpoint existente se conserva por compatibilidad.

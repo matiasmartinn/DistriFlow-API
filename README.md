@@ -91,6 +91,19 @@ Apply database migrations:
 dotnet ef database update --project src/DistriFlow.Infrastructure --startup-project src/DistriFlow.Api
 ```
 
+## Verification
+
+```bash
+dotnet run --project verification/DistriFlow.Domain.Checks
+node scripts/verify-stage-three.mjs
+```
+
+The first command runs Domain invariants without external test packages. The second requires a
+local API and PostgreSQL and creates synthetic data; it defaults to `http://localhost:5116/api`.
+Set `STAGE3_API_URL` for another local instance. See [validation](docs/validation/local-validation.md).
+CI builds the API, checks Domain rules and runs integration against ephemeral PostgreSQL.
+The movement ledger is internal inventory infrastructure; a stock-history UI is outside the current MVP.
+
 ## Related Repository
 
 The frontend lives in the separate `DistriFlow-WEB` repository. It consumes this API through the configured base URL.
