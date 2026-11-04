@@ -25,6 +25,14 @@ public interface IOrderRepository
         DateTime? dateTo,
         int page,
         int pageSize,
+        OrderDateField dateField = OrderDateField.Created,
+        CancellationToken cancellationToken = default);
+
+    Task<(int CreatedToday, int DraftCount, int ConfirmedToday)> GetSummaryAsync(
+        DistributorId distributorId,
+        UserId? salesRepId,
+        DateTime dayFromUtc,
+        DateTime dayUntilUtc,
         CancellationToken cancellationToken = default);
 
     Task AddAsync(

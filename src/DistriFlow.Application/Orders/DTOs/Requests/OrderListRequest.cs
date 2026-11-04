@@ -9,6 +9,9 @@ public sealed record OrderListRequest
     public Guid? SalesRepId { get; init; }
     public DateTime? DateFrom { get; init; }
     public DateTime? DateTo { get; init; }
+    public DateOnly? LocalDateFrom { get; init; }
+    public DateOnly? LocalDateTo { get; init; }
+    public string? DateField { get; init; }
 
     [Range(1, int.MaxValue)]
     public int Page { get; init; } = 1;

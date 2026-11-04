@@ -1,6 +1,8 @@
 using DistriFlow.Application.Common.Pagination;
 using DistriFlow.Application.Common.Results;
 using DistriFlow.Application.Common.Security;
+using DistriFlow.Application.DistributorConfigurations;
+using DistriFlow.Domain.DistributorConfigurations;
 using DistriFlow.Application.Orders.DTOs.Requests;
 using DistriFlow.Application.Orders.DTOs.Responses;
 using DistriFlow.Application.Orders.Mappers;
@@ -21,17 +23,43 @@ public sealed class OrderQueryService : IOrderQueryService
     private readonly ICustomerRepository _customerRepository;
     private readonly IUserRepository _userRepository;
     private readonly ICurrentUserContext _currentUserContext;
+    private readonly IDistributorConfigurationRepository _configurationRepository;
 
     public OrderQueryService(
         IOrderRepository orderRepository,
         ICustomerRepository customerRepository,
         IUserRepository userRepository,
-        ICurrentUserContext currentUserContext)
+        ICurrentUserContext currentUserContext,
+        IDistributorConfigurationRepository configurationRepository)
     {
         _orderRepository = orderRepository;
         _customerRepository = customerRepository;
         _userRepository = userRepository;
         _currentUserContext = currentUserContext;
+        _configurationRepository = configurationRepository;
+    }
+
+    public async Task<Result<OrderDashboardDto>> GetDashboardAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var configuration = await _configurationRepository.GetByDistributorIdAsync(
+            _currentUserContext.DistributorId, cancellationToken);
+        if (configuration is null)
+            return ConfigurationErrors.NotFound();
+
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById(configuration.TimeZone);
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone));
+        var dayFromUtc = OrderCalendar.StartOfDayUtc(today, timeZone);
+        var dayUntilUtc = OrderCalendar.StartOfDayUtc(today.AddDays(1), timeZone);
+        UserId? salesRepId = _currentUserContext.Role == Role.SalesRep ? _currentUserContext.UserId : null;
+        var summary = await _orderRepository.GetSummaryAsync(
+            _currentUserContext.DistributorId, salesRepId, dayFromUtc, dayUntilUtc, cancellationToken);
+        var recent = await GetPagedAsync(new OrderListRequest { PageSize = 10 }, cancellationToken);
+        if (recent.IsFailure)
+            return recent.Error;
+
+        return new OrderDashboardDto(today, configuration.TimeZone, dayUntilUtc,
+            summary.CreatedToday, summary.DraftCount, summary.ConfirmedToday, recent.Data!.Items);
     }
 
     public async Task<Result<OrderDetailDto>> GetByIdAsync(
@@ -69,19 +97,45 @@ public sealed class OrderQueryService : IOrderQueryService
         }
     }
 
-    public Task<Result<PagedResponse<OrderListItemDto>>> GetPagedAsync(
+    public async Task<Result<PagedResponse<OrderListItemDto>>> GetPagedAsync(
         OrderListRequest request,
         CancellationToken cancellationToken = default)
     {
-        return GetPagedAsync(
+        if (!Enum.TryParse<OrderDateField>(request.DateField ?? "Created", true, out var dateField)
+            || !Enum.IsDefined(dateField))
+            return Error.Validation("order.invalid_date_field", "El tipo de fecha del pedido es inválido.");
+
+        var dateFrom = request.DateFrom;
+        var dateTo = request.DateTo;
+        if (request.LocalDateFrom.HasValue || request.LocalDateTo.HasValue)
+        {
+            if (dateFrom.HasValue || dateTo.HasValue)
+                return Error.Validation("order.invalid_date_range", "Usá fechas locales o fechas UTC, sin combinarlas.");
+            if (request.LocalDateFrom > request.LocalDateTo || request.LocalDateTo == DateOnly.MaxValue)
+                return Error.Validation("order.invalid_date_range", "El rango de fechas es inválido.");
+
+            var configuration = await _configurationRepository.GetByDistributorIdAsync(
+                _currentUserContext.DistributorId, cancellationToken);
+            if (configuration is null)
+                return ConfigurationErrors.NotFound();
+
+            var timeZone = TimeZoneInfo.FindSystemTimeZoneById(configuration.TimeZone);
+            if (request.LocalDateFrom.HasValue)
+                dateFrom = OrderCalendar.StartOfDayUtc(request.LocalDateFrom.Value, timeZone);
+            if (request.LocalDateTo.HasValue)
+                dateTo = OrderCalendar.StartOfDayUtc(request.LocalDateTo.Value.AddDays(1), timeZone).AddTicks(-1);
+        }
+
+        return await GetPagedAsync(
             request.Status,
             request.CustomerId,
             request.SalesRepId,
-            request.DateFrom,
-            request.DateTo,
+            dateFrom,
+            dateTo,
             request.Page,
             request.PageSize,
-            cancellationToken);
+            cancellationToken,
+            dateField);
     }
 
     public async Task<Result<PagedResponse<OrderListItemDto>>> GetByCustomerIdAsync(
@@ -123,7 +177,8 @@ public sealed class OrderQueryService : IOrderQueryService
         DateTime? dateToValue,
         int page,
         int pageSize,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        OrderDateField dateField = OrderDateField.Created)
     {
         try
         {
@@ -163,6 +218,7 @@ public sealed class OrderQueryService : IOrderQueryService
                 dateTo,
                 page,
                 pageSize,
+                dateField,
                 cancellationToken);
 
             var customers = await _customerRepository.GetByIdsAsync(

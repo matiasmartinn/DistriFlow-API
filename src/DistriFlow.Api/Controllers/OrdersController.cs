@@ -48,6 +48,13 @@ public sealed class OrdersController : BaseController
             await _queryService.GetPagedAsync(request, cancellationToken));
     }
 
+    [HttpGet("dashboard")]
+    [Authorize(Roles = "Administrator,SalesRep")]
+    public async Task<IActionResult> GetDashboard(CancellationToken cancellationToken)
+    {
+        return HandleResult(await _queryService.GetDashboardAsync(cancellationToken));
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(
         [FromRoute] Guid id,

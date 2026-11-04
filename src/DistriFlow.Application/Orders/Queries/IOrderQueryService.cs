@@ -7,6 +7,9 @@ namespace DistriFlow.Application.Orders.Queries;
 
 public interface IOrderQueryService
 {
+    Task<Result<OrderDashboardDto>> GetDashboardAsync(
+        CancellationToken cancellationToken = default);
+
     Task<Result<OrderDetailDto>> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default);
