@@ -144,7 +144,8 @@ public sealed class CustomerService : ICustomerService
             id,
             customer => customer.UpdateCommercialInfo(
                 request.Zone,
-                ParseTaxCondition(request.TaxCondition)),
+                ParseTaxCondition(request.TaxCondition),
+                request.Name),
             cancellationToken);
     }
 

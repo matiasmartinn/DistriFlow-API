@@ -61,9 +61,6 @@ public sealed class Customer
         if (distributorId.Value == Guid.Empty)
             throw new DomainException("La distribuidora del cliente es requerida.");
 
-        if (string.IsNullOrWhiteSpace(name))
-            throw new DomainException("El nombre del cliente es requerido.");
-
         if (priceListId.HasValue && priceListId.Value.Value == Guid.Empty)
             throw new DomainException("La lista de precios del cliente es invalida.");
 
@@ -72,7 +69,7 @@ public sealed class Customer
         return new Customer(
             CustomerId.New(),
             distributorId,
-            name.Trim(),
+            NormalizeName(name),
             contact,
             address,
             priceListId,
@@ -103,13 +100,15 @@ public sealed class Customer
         Address = address;
     }
 
-    public void UpdateCommercialInfo(string? zone, TaxCondition taxCondition)
+    public void UpdateCommercialInfo(string? zone, TaxCondition taxCondition, string? name = null)
     {
         EnsureActive();
         EnsureTaxCondition(taxCondition);
 
+        var normalizedName = name is null ? Name : NormalizeName(name);
         Zone = NormalizeOptional(zone, 100, "La zona no puede superar 100 caracteres.");
         TaxCondition = taxCondition;
+        Name = normalizedName;
     }
 
     public void Deactivate(
@@ -164,6 +163,18 @@ public sealed class Customer
 
         if (reason.Trim().Length > 500)
             throw new DomainException("El motivo de inactivacion no puede superar 500 caracteres.");
+    }
+
+    private static string NormalizeName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new DomainException("El nombre del cliente es requerido.");
+
+        var normalized = name.Trim();
+        if (normalized.Length > 200)
+            throw new DomainException("El nombre del cliente no puede superar 200 caracteres.");
+
+        return normalized;
     }
 
     private static string? NormalizeOptional(
